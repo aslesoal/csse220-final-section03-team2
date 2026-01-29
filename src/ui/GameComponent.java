@@ -25,7 +25,7 @@ public class GameComponent extends JComponent {
 	Graphics2D g2 = (Graphics2D) g;
 
 	// Minimal placeholder to test  it’s running
-	g2.drawString("Final Project Starter: UI is running ✅", 20, 30);
+	g2.drawString("Final Project Starter: UI is running and updating✅", 20, 30);
 
 
 	// TODO: draw based on model state
