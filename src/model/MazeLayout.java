@@ -20,11 +20,11 @@ public class MazeLayout {
 
         {TileType.WALL, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.WALL},
 
-        {TileType.WALL, TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL},
+        {TileType.WALL, TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR,  TileType.WALL,  TileType.FLOOR, TileType.WALL},
 
         {TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL},
 
-        {TileType.WALL, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL},
+        {TileType.WALL, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.FLOOR,  TileType.WALL,  TileType.WALL},
 
         {TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL},
 
@@ -32,9 +32,9 @@ public class MazeLayout {
 
         {TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL,  TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL},
 
-        {TileType.WALL, TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL},
+        {TileType.WALL, TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR,  TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL},
 
-        {TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL},
+        {TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.FLOOR, TileType.WALL, TileType.FLOOR, TileType.FLOOR, TileType.WALL},
 
         {TileType.WALL, TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL,  TileType.WALL,  TileType.WALL,  TileType.FLOOR, TileType.WALL},
 

@@ -8,7 +8,7 @@ package model;
 public class Player {
 
     // Player size (smaller than a tile)
-    public static final int SIZE = 20;   // tile is 32px, so this is smaller
+    public static final int SIZE = 18;   // tile is 32px, so this is smaller
 
     // Position in pixels
     private double x;
