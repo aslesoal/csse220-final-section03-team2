@@ -1,26 +1,29 @@
 package ui;
 
 import javax.swing.JFrame;
-
-import model.GameModel;
+import model.Maze;
+import model.MazeLayout;
 
 public class GameWindow {
 
-	public static void show() {
-		// Minimal model instance (empty for now, by design)
-		GameModel model = new GameModel();
+    public static void show() {
+        JFrame frame = new JFrame("Maze Game");
 
+        GameComponent component = new GameComponent();
+        frame.add(component);
 
-		JFrame frame = new JFrame("CSSE220 Final Project");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // Optional: size based on maze dimensions
+        int tileSize = GameComponent.TILE_SIZE;
+        Maze maze = new Maze(MazeLayout.MAZE);
 
+        frame.setSize(
+            maze.getCols() * tileSize + 16,
+            maze.getRows() * tileSize + 39
+        );
 
-		frame.add(new GameComponent(model));
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
 
-
-		frame.setSize(600, 600);
-		frame.setLocationRelativeTo(null); // center on screen (nice UX, still minimal)
-		frame.setVisible(true);
-		}
-
+        component.requestFocusInWindow();
+    }
 }
