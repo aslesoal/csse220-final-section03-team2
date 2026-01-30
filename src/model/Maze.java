@@ -3,7 +3,6 @@ package model;
 /**
  * Stores the maze layout and provides helper methods
  * for checking walkability and tile types.
- * @author Aiden
  */
 public class Maze {
 

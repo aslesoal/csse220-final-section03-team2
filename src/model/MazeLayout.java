@@ -3,7 +3,6 @@ package model;
 /**
  * Defines the maze layout for the game.
  * You can later load this from a file.
- * @author Aiden
  */
 
 public class MazeLayout {
