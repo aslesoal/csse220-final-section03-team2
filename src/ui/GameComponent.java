@@ -27,7 +27,6 @@ public class GameComponent extends JComponent {
     private Player player;
     private List<Zombie> zombies = new ArrayList<>();
 
-    // Key state booleans
     private boolean upPressed = false;
     private boolean downPressed = false;
     private boolean leftPressed = false;
@@ -39,11 +38,7 @@ public class GameComponent extends JComponent {
         this.maze = new Maze(MazeLayout.MAZE);
         this.player = new Player(1, 1, maze);
 
-        // Spawn 6 zombies on valid tiles
-        for (int i = 0; i < 6; i++) {
-            int[] pos = getRandomFloorTile();
-            zombies.add(new Zombie(pos[0], pos[1], maze));
-        }
+        spawnZombiesHalfAndHalf();
 
         setFocusable(true);
         setupKeyBindings();
@@ -52,20 +47,76 @@ public class GameComponent extends JComponent {
         timer.start();
     }
 
-    private int[] getRandomFloorTile() {
+    // ------------------------------------------------------------
+    // SPAWNING LOGIC
+    // ------------------------------------------------------------
+
+    private void spawnZombiesHalfAndHalf() {
+        int rows = maze.getRows();
+        int mid = rows / 2;
+
+        for (int i = 0; i < 4; i++) {
+            int[] pos;
+            do {
+                pos = getRandomFloorTileInRange(0, mid - 1);
+            } while (tooCloseToPlayer(pos[0], pos[1]) ||
+                     tooCloseToOtherZombies(pos[0], pos[1]));
+
+            zombies.add(new Zombie(pos[0], pos[1], maze));
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int[] pos;
+            do {
+                pos = getRandomFloorTileInRange(mid, rows - 1);
+            } while (tooCloseToPlayer(pos[0], pos[1]) ||
+                     tooCloseToOtherZombies(pos[0], pos[1]));
+
+            zombies.add(new Zombie(pos[0], pos[1], maze));
+        }
+    }
+
+    private int[] getRandomFloorTileInRange(int rowMin, int rowMax) {
         Random rand = new Random();
         int row, col;
 
         do {
-            row = rand.nextInt(maze.getRows());
+            row = rand.nextInt(rowMax - rowMin + 1) + rowMin;
             col = rand.nextInt(maze.getCols());
         } while (!maze.isWalkable(row, col));
 
         return new int[]{row, col};
     }
 
+    private int tileDistance(int r1, int c1, int r2, int c2) {
+        return Math.abs(r1 - r2) + Math.abs(c1 - c2);
+    }
+
+    private boolean tooCloseToPlayer(int row, int col) {
+        int pr = (int)(player.getY() / TILE_SIZE);
+        int pc = (int)(player.getX() / TILE_SIZE);
+
+        return tileDistance(row, col, pr, pc) < 4;
+    }
+
+    private boolean tooCloseToOtherZombies(int row, int col) {
+        for (Zombie z : zombies) {
+            int zr = (int)(z.getY() / TILE_SIZE);
+            int zc = (int)(z.getX() / TILE_SIZE);
+
+            if (tileDistance(row, col, zr, zc) < 4) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------
+    // INPUT HANDLING
+    // ------------------------------------------------------------
+
     private void setupKeyBindings() {
-        // W
+
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed W"), "pressUp");
         getActionMap().put("pressUp", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { upPressed = true; }
@@ -76,7 +127,6 @@ public class GameComponent extends JComponent {
             public void actionPerformed(ActionEvent e) { upPressed = false; }
         });
 
-        // S
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed S"), "pressDown");
         getActionMap().put("pressDown", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { downPressed = true; }
@@ -87,7 +137,6 @@ public class GameComponent extends JComponent {
             public void actionPerformed(ActionEvent e) { downPressed = false; }
         });
 
-        // A
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed A"), "pressLeft");
         getActionMap().put("pressLeft", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { leftPressed = true; }
@@ -98,7 +147,6 @@ public class GameComponent extends JComponent {
             public void actionPerformed(ActionEvent e) { leftPressed = false; }
         });
 
-        // D
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed D"), "pressRight");
         getActionMap().put("pressRight", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { rightPressed = true; }
@@ -110,6 +158,10 @@ public class GameComponent extends JComponent {
         });
     }
 
+    // ------------------------------------------------------------
+    // GAME LOOP
+    // ------------------------------------------------------------
+
     private void updateGame() {
         double dx = 0;
         double dy = 0;
@@ -119,7 +171,6 @@ public class GameComponent extends JComponent {
         if (leftPressed)  dx -= player.getSpeed();
         if (rightPressed) dx += player.getSpeed();
 
-        // Normalize diagonal movement
         if (dx != 0 && dy != 0) {
             dx *= 0.707;
             dy *= 0.707;
@@ -131,22 +182,74 @@ public class GameComponent extends JComponent {
             z.update();
         }
 
+        handleZombieCollisions();
+
         repaint();
     }
+
+    // ------------------------------------------------------------
+    // ZOMBIE–ZOMBIE COLLISION HANDLING (SAFE)
+    // ------------------------------------------------------------
+
+    private void handleZombieCollisions() {
+        for (int i = 0; i < zombies.size(); i++) {
+            Zombie a = zombies.get(i);
+
+            for (int j = i + 1; j < zombies.size(); j++) {
+                Zombie b = zombies.get(j);
+
+                double dx = b.getX() - a.getX();
+                double dy = b.getY() - a.getY();
+
+                double dist = Math.sqrt(dx * dx + dy * dy);
+                double minDist = Zombie.SIZE;
+
+                if (dist < minDist) {
+
+                    b.chooseNewDirection();
+
+                    double overlap = minDist - dist;
+
+                    if (dist == 0) {
+                        dx = 1;
+                        dy = 0;
+                        dist = 1;
+                    }
+
+                    double pushX = (dx / dist) * (overlap / 2);
+                    double pushY = (dy / dist) * (overlap / 2);
+
+                    double aNewX = a.getX() - pushX;
+                    double aNewY = a.getY() - pushY;
+
+                    double bNewX = b.getX() + pushX;
+                    double bNewY = b.getY() + pushY;
+
+                    boolean aSafe = !a.collidesWithWall(aNewX, aNewY);
+                    boolean bSafe = !b.collidesWithWall(bNewX, bNewY);
+
+                    if (aSafe) a.setPosition(aNewX, aNewY);
+                    if (bSafe) b.setPosition(bNewX, bNewY);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // DRAWING
+    // ------------------------------------------------------------
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // Draw maze
         for (int r = 0; r < maze.getRows(); r++) {
             for (int c = 0; c < maze.getCols(); c++) {
                 maze.getTile(r, c).draw(g2, TILE_SIZE);
             }
         }
 
-        // Draw player
         g2.setColor(Color.BLUE);
         g2.fillOval(
             (int) player.getX(),
@@ -155,7 +258,6 @@ public class GameComponent extends JComponent {
             player.getSize()
         );
 
-        // Draw zombies
         g2.setColor(Color.RED);
         for (Zombie z : zombies) {
             g2.fillOval(

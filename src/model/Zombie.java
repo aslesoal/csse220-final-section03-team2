@@ -2,14 +2,9 @@ package model;
 
 import java.util.Random;
 
-/**
- * A zombie that moves in a straight line until it hits a wall.
- * When blocked, it chooses a new random direction and continues.
- * Slightly larger than the player but smaller than a tile.
- */
 public class Zombie {
 
-    public static final int SIZE = 24; // Player is 20, tile is 32
+    public static final int SIZE = 24;
 
     private double x;
     private double y;
@@ -25,12 +20,10 @@ public class Zombie {
     public Zombie(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
-        // Convert tile coords to pixel coords
         this.x = startCol * 32 + (32 - SIZE) / 2.0;
         this.y = startRow * 32 + (32 - SIZE) / 2.0;
 
-        // Safety check: ensure zombie is not spawning inside a wall
-        if (collidesWithWall(x, y)) {
+        if (collidesWithWallInternal(x, y)) {
             throw new IllegalArgumentException(
                 "Zombie spawned inside a wall at row=" + startRow + ", col=" + startCol
             );
@@ -43,61 +36,64 @@ public class Zombie {
     public double getY() { return y; }
     public int getSize() { return SIZE; }
 
-    /**
-     * Moves the zombie. If the next step hits a wall,
-     * it chooses a new random direction.
-     */
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public void update() {
         double newX = x + dx;
         double newY = y + dy;
 
-        // If blocked horizontally or vertically, pick a new direction
-        if (collidesWithWall(newX, y) || collidesWithWall(x, newY)) {
+        if (collidesWithWallInternal(newX, y) || collidesWithWallInternal(x, newY)) {
             chooseNewDirection();
             return;
         }
 
-        // Otherwise move normally
         x = newX;
         y = newY;
     }
 
-    /**
-     * Picks a random cardinal direction (up, down, left, right)
-     * that is NOT blocked by a wall.
-     */
-    private void chooseNewDirection() {
-        // Try up to 10 random directions
-        for (int i = 0; i < 10; i++) {
-            int dir = rand.nextInt(4);
+    public void chooseNewDirection() {
+        boolean movingHoriz = Math.abs(dx) > 0;
+        boolean movingVert  = Math.abs(dy) > 0;
 
+        for (int i = 0; i < 10; i++) {
             double testDx = 0;
             double testDy = 0;
 
-            switch (dir) {
-                case 0: testDx = speed; break;   // right
-                case 1: testDx = -speed; break;  // left
-                case 2: testDy = speed; break;   // down
-                case 3: testDy = -speed; break;  // up
+            if (movingVert) {
+                if (rand.nextBoolean()) testDx = speed;
+                else testDx = -speed;
+            } else if (movingHoriz) {
+                if (rand.nextBoolean()) testDy = speed;
+                else testDy = -speed;
+            } else {
+                int dir = rand.nextInt(4);
+                switch (dir) {
+                    case 0: testDx = speed; break;
+                    case 1: testDx = -speed; break;
+                    case 2: testDy = speed; break;
+                    case 3: testDy = -speed; break;
+                }
             }
 
-            // Check if this direction is valid
-            if (!collidesWithWall(x + testDx, y + testDy)) {
+            if (!collidesWithWallInternal(x + testDx, y + testDy)) {
                 dx = testDx;
                 dy = testDy;
                 return;
             }
         }
 
-        // If all directions fail (rare), stop temporarily
         dx = 0;
         dy = 0;
     }
 
-    /**
-     * Checks if the zombie's bounding box intersects a wall tile.
-     */
-    private boolean collidesWithWall(double px, double py) {
+    public boolean collidesWithWall(double px, double py) {
+        return collidesWithWallInternal(px, py);
+    }
+
+    private boolean collidesWithWallInternal(double px, double py) {
         int tileSize = 32;
 
         int left   = (int) px;
