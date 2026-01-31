@@ -12,10 +12,16 @@ public class Zombie {
     private double dx;
     private double dy;
 
-    private double speed = 1.6;
+    private double speed = 2.0;
 
     private Maze maze;
     private Random rand = new Random();
+
+    // Collision cooldown (grace period)
+    private int collisionCooldown = 0;
+
+    // Wander-zone timer
+    private int wanderTimer = 0;
 
     public Zombie(int startRow, int startCol, Maze maze) {
         this.maze = maze;
@@ -41,7 +47,39 @@ public class Zombie {
         this.y = y;
     }
 
+    // Cooldown helpers
+    public boolean isInCollisionCooldown() {
+        return collisionCooldown > 0;
+    }
+
+    public void triggerCollisionCooldown() {
+        collisionCooldown = 20; // ~0.33 seconds
+    }
+
+    private void tickCooldown() {
+        if (collisionCooldown > 0) collisionCooldown--;
+    }
+
     public void update() {
+        tickCooldown();
+
+        // Wander-zone Option C1 (light upward bias)
+        wanderTimer++;
+        if (wanderTimer > 180) { // every ~3 seconds
+            int row = (int)(y / 32);
+            int mid = maze.getRows() / 2;
+
+            if (row > mid) {
+                // 35% chance to bias upward
+                if (rand.nextInt(100) < 35) {
+                    dy = -speed;
+                    dx = 0;
+                }
+            }
+
+            wanderTimer = 0;
+        }
+
         double newX = x + dx;
         double newY = y + dy;
 

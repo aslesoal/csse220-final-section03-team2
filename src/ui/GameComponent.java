@@ -96,7 +96,7 @@ public class GameComponent extends JComponent {
         int pr = (int)(player.getY() / TILE_SIZE);
         int pc = (int)(player.getX() / TILE_SIZE);
 
-        return tileDistance(row, col, pr, pc) < 4;
+        return tileDistance(row, col, pr, pc) < 5;
     }
 
     private boolean tooCloseToOtherZombies(int row, int col) {
@@ -104,7 +104,7 @@ public class GameComponent extends JComponent {
             int zr = (int)(z.getY() / TILE_SIZE);
             int zc = (int)(z.getX() / TILE_SIZE);
 
-            if (tileDistance(row, col, zr, zc) < 4) {
+            if (tileDistance(row, col, zr, zc) < 3) {
                 return true;
             }
         }
@@ -188,7 +188,7 @@ public class GameComponent extends JComponent {
     }
 
     // ------------------------------------------------------------
-    // ZOMBIE–ZOMBIE COLLISION HANDLING (SAFE)
+    // ZOMBIE–ZOMBIE COLLISION HANDLING (SAFE PUSH + COOLDOWN)
     // ------------------------------------------------------------
 
     private void handleZombieCollisions() {
@@ -198,6 +198,10 @@ public class GameComponent extends JComponent {
             for (int j = i + 1; j < zombies.size(); j++) {
                 Zombie b = zombies.get(j);
 
+                if (a.isInCollisionCooldown() || b.isInCollisionCooldown()) {
+                    continue;
+                }
+
                 double dx = b.getX() - a.getX();
                 double dy = b.getY() - a.getY();
 
@@ -205,6 +209,9 @@ public class GameComponent extends JComponent {
                 double minDist = Zombie.SIZE;
 
                 if (dist < minDist) {
+
+                    a.triggerCollisionCooldown();
+                    b.triggerCollisionCooldown();
 
                     b.chooseNewDirection();
 
