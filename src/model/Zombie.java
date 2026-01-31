@@ -12,7 +12,7 @@ public class Zombie {
     private double dx;
     private double dy;
 
-    private double speed = 2.0;
+    private double speed = 2.5;
 
     private Maze maze;
     private Random rand = new Random();

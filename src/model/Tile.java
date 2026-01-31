@@ -3,16 +3,11 @@ package model;
 import java.awt.Graphics2D;
 import java.awt.Color;
 
-/**
- * A single tile in the maze grid.
- * Tiles do not move and do not update.
- * @author Aiden
- */
 public class Tile {
 
-    private final TileType type;
-    private final int row;
-    private final int col;
+    private TileType type;
+    private int row;
+    private int col;
 
     public Tile(TileType type, int row, int col) {
         this.type = type;
@@ -25,22 +20,26 @@ public class Tile {
     }
 
     public boolean isWalkable() {
-        return type != TileType.WALL;
+        return type == TileType.FLOOR || type == TileType.EXIT;
     }
 
-    public void draw(Graphics2D g, int tileSize) {
-        switch (type) {
-            case WALL:
-                g.setColor(Color.DARK_GRAY);
-                break;
-            case FLOOR:
-                g.setColor(Color.LIGHT_GRAY);
-                break;
-            case EXIT:
-                g.setColor(Color.GREEN);
-                break;
-        }
+    public boolean isExit() {
+        return type == TileType.EXIT;
+    }
 
-        g.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+    public void draw(Graphics2D g2, int tileSize) {
+        int x = col * tileSize;
+        int y = row * tileSize;
+
+        if (type == TileType.WALL) {
+            g2.setColor(Color.DARK_GRAY);
+            g2.fillRect(x, y, tileSize, tileSize);
+        } else if (type == TileType.FLOOR) {
+            g2.setColor(Color.LIGHT_GRAY);
+            g2.fillRect(x, y, tileSize, tileSize);
+        } else if (type == TileType.EXIT) {
+            g2.setColor(Color.GREEN);
+            g2.fillRect(x, y, tileSize, tileSize);
+        }
     }
 }

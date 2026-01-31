@@ -14,6 +14,7 @@ import model.Maze;
 import model.MazeLayout;
 import model.Player;
 import model.Zombie;
+import model.Collectible;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,19 +27,24 @@ public class GameComponent extends JComponent {
     private Maze maze;
     private Player player;
     private List<Zombie> zombies = new ArrayList<>();
+    private List<Collectible> collectibles = new ArrayList<>();
 
     private boolean upPressed = false;
     private boolean downPressed = false;
     private boolean leftPressed = false;
     private boolean rightPressed = false;
 
+    private boolean exitUnlocked = false;
+
     private Timer timer;
 
     public GameComponent() {
+
         this.maze = new Maze(MazeLayout.MAZE);
         this.player = new Player(1, 1, maze);
 
         spawnZombiesHalfAndHalf();
+        spawnCollectibles(8);
 
         setFocusable(true);
         setupKeyBindings();
@@ -55,6 +61,7 @@ public class GameComponent extends JComponent {
         int rows = maze.getRows();
         int mid = rows / 2;
 
+        // 4 zombies in the top half
         for (int i = 0; i < 4; i++) {
             int[] pos;
             do {
@@ -65,6 +72,7 @@ public class GameComponent extends JComponent {
             zombies.add(new Zombie(pos[0], pos[1], maze));
         }
 
+        // 4 zombies in the bottom half
         for (int i = 0; i < 4; i++) {
             int[] pos;
             do {
@@ -74,6 +82,37 @@ public class GameComponent extends JComponent {
 
             zombies.add(new Zombie(pos[0], pos[1], maze));
         }
+    }
+
+    private void spawnCollectibles(int count) {
+        Random rand = new Random();
+
+        for (int i = 0; i < count; i++) {
+            int row, col;
+
+            do {
+                row = rand.nextInt(maze.getRows());
+                col = rand.nextInt(maze.getCols());
+            } while (
+                !maze.isWalkable(row, col) ||
+                tooCloseToOtherCollectibles(row, col) ||
+                tooCloseToPlayer(row, col)
+            );
+
+            collectibles.add(new Collectible(row, col));
+        }
+    }
+
+    private boolean tooCloseToOtherCollectibles(int row, int col) {
+        for (Collectible c : collectibles) {
+            int cr = (int)(c.getY() / TILE_SIZE);
+            int cc = (int)(c.getX() / TILE_SIZE);
+
+            if (tileDistance(row, col, cr, cc) < 3) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int[] getRandomFloorTileInRange(int rowMin, int rowMax) {
@@ -183,12 +222,61 @@ public class GameComponent extends JComponent {
         }
 
         handleZombieCollisions();
+        checkCollectiblePickup();
+
+        // unlock exit when all collectibles are gone
+        if (!exitUnlocked && collectibles.isEmpty()) {
+            exitUnlocked = true;
+            System.out.println("Exit unlocked!");
+        }
+
+        checkExitReached();
 
         repaint();
     }
 
     // ------------------------------------------------------------
-    // ZOMBIE–ZOMBIE COLLISION HANDLING (SAFE PUSH + COOLDOWN)
+    // COLLECTIBLE PICKUP
+    // ------------------------------------------------------------
+
+    private void checkCollectiblePickup() {
+        double px = player.getX();
+        double py = player.getY();
+        int pSize = player.getSize();
+
+        collectibles.removeIf(c -> {
+            double cx = c.getX();
+            double cy = c.getY();
+            int cSize = c.getSize();
+
+            boolean overlap =
+                px < cx + cSize &&
+                px + pSize > cx &&
+                py < cy + cSize &&
+                py + pSize > cy;
+
+            return overlap;
+        });
+    }
+
+    // ------------------------------------------------------------
+    // EXIT REACHED / WIN CONDITION
+    // ------------------------------------------------------------
+
+    private void checkExitReached() {
+        if (!exitUnlocked) return;
+
+        int row = (int)(player.getY() / TILE_SIZE);
+        int col = (int)(player.getX() / TILE_SIZE);
+
+        if (maze.getTile(row, col).isExit()) {
+            System.out.println("YOU WIN!");
+            // later: stop timer, show dialog, etc.
+        }
+    }
+
+    // ------------------------------------------------------------
+    // ZOMBIE–ZOMBIE COLLISION HANDLING
     // ------------------------------------------------------------
 
     private void handleZombieCollisions() {
@@ -273,6 +361,21 @@ public class GameComponent extends JComponent {
                 z.getSize(),
                 z.getSize()
             );
+        }
+
+        g2.setColor(Color.YELLOW);
+        for (Collectible c : collectibles) {
+            g2.fillOval(
+                (int) c.getX(),
+                (int) c.getY(),
+                c.getSize(),
+                c.getSize()
+            );
+        }
+
+        // optional: highlight exit when unlocked
+        if (exitUnlocked) {
+            // add glow or effect if you want
         }
     }
 }
