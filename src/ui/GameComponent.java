@@ -15,7 +15,8 @@ import java.util.Random;
 
 /**
  * Main game panel responsible for rendering and updating the game.
- * Handles player movement, zombie AI, collectible logic, and drawing.
+ * Handles player movement, zombie AI, collectible logic, exit unlocking,
+ * and drawing.
  */
 public class GameComponent extends JPanel implements KeyListener {
 
@@ -24,13 +25,11 @@ public class GameComponent extends JPanel implements KeyListener {
     private ArrayList<Zombie> zombies = new ArrayList<>();
     private ArrayList<Collectible> collectibles = new ArrayList<>();
 
-    // Movement flags
     private boolean up, down, left, right;
 
-    /**
-     * Constructs the game component, loads the maze, player,
-     * zombies, collectibles, and starts the update loop.
-     */
+    /** Exit starts locked. Unlocks only when all collectibles are collected. */
+    private boolean exitUnlocked = false;
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
@@ -38,8 +37,8 @@ public class GameComponent extends JPanel implements KeyListener {
         maze = new Maze(MazeLayout.MAZE);
         player = new Player(1, 1, maze);
 
-        spawnZombies();        // 6 zombies, safe placement
-        spawnCollectibles();   // 8 collectibles, safe placement
+        spawnZombies();        // 6 zombies
+        spawnCollectibles();   // 8 collectibles
 
         Timer timer = new Timer(16, e -> updateGame());
         timer.start();
@@ -49,9 +48,6 @@ public class GameComponent extends JPanel implements KeyListener {
     // Helper Methods for Spawning
     // ---------------------------------------------------------
 
-    /**
-     * Finds a random walkable tile within a given row range.
-     */
     private int[] getRandomFloorTile(int rowMin, int rowMax) {
         Random rand = new Random();
         int row, col;
@@ -64,27 +60,18 @@ public class GameComponent extends JPanel implements KeyListener {
         return new int[]{row, col};
     }
 
-    /**
-     * Ensures zombies do not spawn too close together.
-     */
     private boolean tooClose(double x1, double y1, double x2, double y2) {
         double dx = x1 - x2;
         double dy = y1 - y2;
         return Math.sqrt(dx * dx + dy * dy) < 40;
     }
 
-    /**
-     * Ensures collectibles do not overlap each other.
-     */
     private boolean collectibleTooClose(double x1, double y1, double x2, double y2) {
         double dx = x1 - x2;
         double dy = y1 - y2;
         return Math.sqrt(dx * dx + dy * dy) < 32;
     }
 
-    /**
-     * Ensures collectibles do not spawn too close to zombies.
-     */
     private boolean tooCloseToZombie(double x, double y) {
         for (Zombie z : zombies) {
             double dx = x - z.getX();
@@ -100,12 +87,6 @@ public class GameComponent extends JPanel implements KeyListener {
     // Zombie Spawning (4 total)
     // ---------------------------------------------------------
 
-    /**
-     * Spawns 4 zombies:
-     * 2 in the top half of the maze,
-     * 2 in the bottom half.
-     * Ensures valid tiles and no overlapping.
-     */
     private void spawnZombies() {
         zombies.clear();
 
@@ -115,7 +96,7 @@ public class GameComponent extends JPanel implements KeyListener {
         int zombiesTop = 3;
         int zombiesBottom = 3;
 
-        // Top half zombies
+        // Top half
         for (int i = 0; i < zombiesTop; i++) {
             int[] pos;
             double x, y;
@@ -135,7 +116,7 @@ public class GameComponent extends JPanel implements KeyListener {
             zombies.add(new Zombie(pos[0], pos[1], maze));
         }
 
-        // Bottom half zombies
+        // Bottom half
         for (int i = 0; i < zombiesBottom; i++) {
             int[] pos;
             double x, y;
@@ -160,10 +141,6 @@ public class GameComponent extends JPanel implements KeyListener {
     // Collectible Spawning (8 total)
     // ---------------------------------------------------------
 
-    /**
-     * Spawns 8 collectibles on valid floor tiles.
-     * Ensures no overlap with walls, zombies, or other collectibles.
-     */
     private void spawnCollectibles() {
         collectibles.clear();
 
@@ -181,7 +158,6 @@ public class GameComponent extends JPanel implements KeyListener {
 
                 boolean ok = true;
 
-                // Check against other collectibles
                 for (Collectible c : collectibles) {
                     if (collectibleTooClose(x, y, c.getX(), c.getY())) {
                         ok = false;
@@ -189,10 +165,7 @@ public class GameComponent extends JPanel implements KeyListener {
                     }
                 }
 
-                // Check against zombies
-                if (ok && tooCloseToZombie(x, y)) {
-                    ok = false;
-                }
+                if (ok && tooCloseToZombie(x, y)) ok = false;
 
                 if (ok) break;
             }
@@ -216,7 +189,7 @@ public class GameComponent extends JPanel implements KeyListener {
 
         if (dx != 0 || dy != 0) player.move(dx, dy);
 
-        // Update zombies and check collisions
+        // Update zombies
         for (Zombie z : zombies) {
             z.update();
 
@@ -233,7 +206,7 @@ public class GameComponent extends JPanel implements KeyListener {
             }
         }
 
-        // Collectible pickups
+        // Collectibles
         for (Collectible c : collectibles) {
             if (!c.isCollected()) {
                 if (overlaps(player.getX(), player.getY(), Player.SIZE,
@@ -243,10 +216,24 @@ public class GameComponent extends JPanel implements KeyListener {
             }
         }
 
-        // Win detection
+        // Check if all collectibles are collected
+        boolean allCollected = true;
+        for (Collectible c : collectibles) {
+            if (!c.isCollected()) {
+                allCollected = false;
+                break;
+            }
+        }
+
+        if (allCollected) {
+            exitUnlocked = true;
+        }
+
+        // Win condition only when exit is unlocked
         int row = (int)(player.getY() / GameConstant.TILE_SIZE);
         int col = (int)(player.getX() / GameConstant.TILE_SIZE);
-        if (maze.isExit(row, col)) {
+
+        if (exitUnlocked && maze.isExit(row, col)) {
             System.out.println("You win!");
         }
 
