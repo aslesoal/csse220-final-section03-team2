@@ -1,121 +1,58 @@
 package ui;
 
-import javax.swing.JComponent;
-import javax.swing.KeyStroke;
-import javax.swing.AbstractAction;
+import javax.swing.JPanel;
 import javax.swing.Timer;
+
+import model.*;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-
-import model.Maze;
-import model.MazeLayout;
-import model.Player;
-import model.Zombie;
-import model.Collectible;
-
+import java.awt.event.KeyListener;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
-public class GameComponent extends JComponent {
-
-    public static final int TILE_SIZE = 32;
+/**
+ * Main game panel responsible for rendering and updating the game.
+ * Handles player movement, zombie AI, collectible logic, and drawing.
+ */
+public class GameComponent extends JPanel implements KeyListener {
 
     private Maze maze;
     private Player player;
-    private List<Zombie> zombies = new ArrayList<>();
-    private List<Collectible> collectibles = new ArrayList<>();
+    private ArrayList<Zombie> zombies = new ArrayList<>();
+    private ArrayList<Collectible> collectibles = new ArrayList<>();
 
-    private boolean upPressed = false;
-    private boolean downPressed = false;
-    private boolean leftPressed = false;
-    private boolean rightPressed = false;
+    // Movement flags
+    private boolean up, down, left, right;
 
-    private boolean exitUnlocked = false;
-
-    private Timer timer;
-
+    /**
+     * Constructs the game component, loads the maze, player,
+     * zombies, collectibles, and starts the update loop.
+     */
     public GameComponent() {
-
-        this.maze = new Maze(MazeLayout.MAZE);
-        this.player = new Player(1, 1, maze);
-
-        spawnZombiesHalfAndHalf();
-        spawnCollectibles(8);
-
         setFocusable(true);
-        setupKeyBindings();
+        addKeyListener(this);
 
-        timer = new Timer(16, e -> updateGame());
+        maze = new Maze(MazeLayout.MAZE);
+        player = new Player(1, 1, maze);
+
+        spawnZombies();        // 6 zombies, safe placement
+        spawnCollectibles();   // 8 collectibles, safe placement
+
+        Timer timer = new Timer(16, e -> updateGame());
         timer.start();
     }
 
-    // ------------------------------------------------------------
-    // SPAWNING LOGIC
-    // ------------------------------------------------------------
+    // ---------------------------------------------------------
+    // Helper Methods for Spawning
+    // ---------------------------------------------------------
 
-    private void spawnZombiesHalfAndHalf() {
-        int rows = maze.getRows();
-        int mid = rows / 2;
-
-        // 4 zombies in the top half
-        for (int i = 0; i < 4; i++) {
-            int[] pos;
-            do {
-                pos = getRandomFloorTileInRange(0, mid - 1);
-            } while (tooCloseToPlayer(pos[0], pos[1]) ||
-                     tooCloseToOtherZombies(pos[0], pos[1]));
-
-            zombies.add(new Zombie(pos[0], pos[1], maze));
-        }
-
-        // 4 zombies in the bottom half
-        for (int i = 0; i < 4; i++) {
-            int[] pos;
-            do {
-                pos = getRandomFloorTileInRange(mid, rows - 1);
-            } while (tooCloseToPlayer(pos[0], pos[1]) ||
-                     tooCloseToOtherZombies(pos[0], pos[1]));
-
-            zombies.add(new Zombie(pos[0], pos[1], maze));
-        }
-    }
-
-    private void spawnCollectibles(int count) {
-        Random rand = new Random();
-
-        for (int i = 0; i < count; i++) {
-            int row, col;
-
-            do {
-                row = rand.nextInt(maze.getRows());
-                col = rand.nextInt(maze.getCols());
-            } while (
-                !maze.isWalkable(row, col) ||
-                tooCloseToOtherCollectibles(row, col) ||
-                tooCloseToPlayer(row, col)
-            );
-
-            collectibles.add(new Collectible(row, col));
-        }
-    }
-
-    private boolean tooCloseToOtherCollectibles(int row, int col) {
-        for (Collectible c : collectibles) {
-            int cr = (int)(c.getY() / TILE_SIZE);
-            int cc = (int)(c.getX() / TILE_SIZE);
-
-            if (tileDistance(row, col, cr, cc) < 3) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private int[] getRandomFloorTileInRange(int rowMin, int rowMax) {
+    /**
+     * Finds a random walkable tile within a given row range.
+     */
+    private int[] getRandomFloorTile(int rowMin, int rowMax) {
         Random rand = new Random();
         int row, col;
 
@@ -127,255 +64,281 @@ public class GameComponent extends JComponent {
         return new int[]{row, col};
     }
 
-    private int tileDistance(int r1, int c1, int r2, int c2) {
-        return Math.abs(r1 - r2) + Math.abs(c1 - c2);
+    /**
+     * Ensures zombies do not spawn too close together.
+     */
+    private boolean tooClose(double x1, double y1, double x2, double y2) {
+        double dx = x1 - x2;
+        double dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy) < 40;
     }
 
-    private boolean tooCloseToPlayer(int row, int col) {
-        int pr = (int)(player.getY() / TILE_SIZE);
-        int pc = (int)(player.getX() / TILE_SIZE);
-
-        return tileDistance(row, col, pr, pc) < 5;
+    /**
+     * Ensures collectibles do not overlap each other.
+     */
+    private boolean collectibleTooClose(double x1, double y1, double x2, double y2) {
+        double dx = x1 - x2;
+        double dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy) < 32;
     }
 
-    private boolean tooCloseToOtherZombies(int row, int col) {
+    /**
+     * Ensures collectibles do not spawn too close to zombies.
+     */
+    private boolean tooCloseToZombie(double x, double y) {
         for (Zombie z : zombies) {
-            int zr = (int)(z.getY() / TILE_SIZE);
-            int zc = (int)(z.getX() / TILE_SIZE);
-
-            if (tileDistance(row, col, zr, zc) < 3) {
+            double dx = x - z.getX();
+            double dy = y - z.getY();
+            if (Math.sqrt(dx * dx + dy * dy) < 40) {
                 return true;
             }
         }
         return false;
     }
 
-    // ------------------------------------------------------------
-    // INPUT HANDLING
-    // ------------------------------------------------------------
+    // ---------------------------------------------------------
+    // Zombie Spawning (4 total)
+    // ---------------------------------------------------------
 
-    private void setupKeyBindings() {
+    /**
+     * Spawns 4 zombies:
+     * 2 in the top half of the maze,
+     * 2 in the bottom half.
+     * Ensures valid tiles and no overlapping.
+     */
+    private void spawnZombies() {
+        zombies.clear();
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed W"), "pressUp");
-        getActionMap().put("pressUp", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { upPressed = true; }
-        });
+        int rows = maze.getRows();
+        int mid = rows / 2;
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released W"), "releaseUp");
-        getActionMap().put("releaseUp", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { upPressed = false; }
-        });
+        int zombiesTop = 3;
+        int zombiesBottom = 3;
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed S"), "pressDown");
-        getActionMap().put("pressDown", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { downPressed = true; }
-        });
+        // Top half zombies
+        for (int i = 0; i < zombiesTop; i++) {
+            int[] pos;
+            double x, y;
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released S"), "releaseDown");
-        getActionMap().put("releaseDown", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { downPressed = false; }
-        });
+            while (true) {
+                pos = getRandomFloorTile(1, mid - 1);
+                x = pos[1] * GameConstant.TILE_SIZE + 4;
+                y = pos[0] * GameConstant.TILE_SIZE + 4;
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed A"), "pressLeft");
-        getActionMap().put("pressLeft", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { leftPressed = true; }
-        });
+                boolean ok = true;
+                for (Zombie z : zombies) {
+                    if (tooClose(x, y, z.getX(), z.getY())) ok = false;
+                }
+                if (ok) break;
+            }
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released A"), "releaseLeft");
-        getActionMap().put("releaseLeft", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { leftPressed = false; }
-        });
+            zombies.add(new Zombie(pos[0], pos[1], maze));
+        }
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed D"), "pressRight");
-        getActionMap().put("pressRight", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { rightPressed = true; }
-        });
+        // Bottom half zombies
+        for (int i = 0; i < zombiesBottom; i++) {
+            int[] pos;
+            double x, y;
 
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released D"), "releaseRight");
-        getActionMap().put("releaseRight", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { rightPressed = false; }
-        });
+            while (true) {
+                pos = getRandomFloorTile(mid + 1, rows - 2);
+                x = pos[1] * GameConstant.TILE_SIZE + 4;
+                y = pos[0] * GameConstant.TILE_SIZE + 4;
+
+                boolean ok = true;
+                for (Zombie z : zombies) {
+                    if (tooClose(x, y, z.getX(), z.getY())) ok = false;
+                }
+                if (ok) break;
+            }
+
+            zombies.add(new Zombie(pos[0], pos[1], maze));
+        }
     }
 
-    // ------------------------------------------------------------
-    // GAME LOOP
-    // ------------------------------------------------------------
+    // ---------------------------------------------------------
+    // Collectible Spawning (8 total)
+    // ---------------------------------------------------------
+
+    /**
+     * Spawns 8 collectibles on valid floor tiles.
+     * Ensures no overlap with walls, zombies, or other collectibles.
+     */
+    private void spawnCollectibles() {
+        collectibles.clear();
+
+        int total = 8;
+
+        for (int i = 0; i < total; i++) {
+            int[] pos;
+            double x, y;
+
+            while (true) {
+                pos = getRandomFloorTile(1, maze.getRows() - 2);
+
+                x = pos[1] * GameConstant.TILE_SIZE + 8;
+                y = pos[0] * GameConstant.TILE_SIZE + 8;
+
+                boolean ok = true;
+
+                // Check against other collectibles
+                for (Collectible c : collectibles) {
+                    if (collectibleTooClose(x, y, c.getX(), c.getY())) {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                // Check against zombies
+                if (ok && tooCloseToZombie(x, y)) {
+                    ok = false;
+                }
+
+                if (ok) break;
+            }
+
+            collectibles.add(new Collectible(pos[0], pos[1]));
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Game Update Loop
+    // ---------------------------------------------------------
 
     private void updateGame() {
-        double dx = 0;
-        double dy = 0;
+        double speed = player.getSpeed();
+        double dx = 0, dy = 0;
 
-        if (upPressed)    dy -= player.getSpeed();
-        if (downPressed)  dy += player.getSpeed();
-        if (leftPressed)  dx -= player.getSpeed();
-        if (rightPressed) dx += player.getSpeed();
+        if (up) dy -= speed;
+        if (down) dy += speed;
+        if (left) dx -= speed;
+        if (right) dx += speed;
 
-        if (dx != 0 && dy != 0) {
-            dx *= 0.707;
-            dy *= 0.707;
-        }
+        if (dx != 0 || dy != 0) player.move(dx, dy);
 
-        player.move(dx, dy);
-
+        // Update zombies and check collisions
         for (Zombie z : zombies) {
             z.update();
+
+            if (!z.isInCollisionCooldown()) {
+                if (overlaps(player.getX(), player.getY(), Player.SIZE,
+                             z.getX(), z.getY(), Zombie.SIZE)) {
+
+                    z.triggerCollisionCooldown();
+                    player.setPosition(
+                        1 * GameConstant.TILE_SIZE + 7,
+                        1 * GameConstant.TILE_SIZE + 7
+                    );
+                }
+            }
         }
 
-        handleZombieCollisions();
-        checkCollectiblePickup();
-
-        // unlock exit when all collectibles are gone
-        if (!exitUnlocked && collectibles.isEmpty()) {
-            exitUnlocked = true;
-            System.out.println("Exit unlocked!");
+        // Collectible pickups
+        for (Collectible c : collectibles) {
+            if (!c.isCollected()) {
+                if (overlaps(player.getX(), player.getY(), Player.SIZE,
+                             c.getX(), c.getY(), Collectible.SIZE)) {
+                    c.collect();
+                }
+            }
         }
 
-        checkExitReached();
+        // Win detection
+        int row = (int)(player.getY() / GameConstant.TILE_SIZE);
+        int col = (int)(player.getX() / GameConstant.TILE_SIZE);
+        if (maze.isExit(row, col)) {
+            System.out.println("You win!");
+        }
 
         repaint();
     }
 
-    // ------------------------------------------------------------
-    // COLLECTIBLE PICKUP
-    // ------------------------------------------------------------
-
-    private void checkCollectiblePickup() {
-        double px = player.getX();
-        double py = player.getY();
-        int pSize = player.getSize();
-
-        collectibles.removeIf(c -> {
-            double cx = c.getX();
-            double cy = c.getY();
-            int cSize = c.getSize();
-
-            boolean overlap =
-                px < cx + cSize &&
-                px + pSize > cx &&
-                py < cy + cSize &&
-                py + pSize > cy;
-
-            return overlap;
-        });
+    private boolean overlaps(double x1, double y1, int s1,
+                             double x2, double y2, int s2) {
+        return x1 < x2 + s2 &&
+               x1 + s1 > x2 &&
+               y1 < y2 + s2 &&
+               y1 + s1 > y2;
     }
 
-    // ------------------------------------------------------------
-    // EXIT REACHED / WIN CONDITION
-    // ------------------------------------------------------------
-
-    private void checkExitReached() {
-        if (!exitUnlocked) return;
-
-        int row = (int)(player.getY() / TILE_SIZE);
-        int col = (int)(player.getX() / TILE_SIZE);
-
-        if (maze.getTile(row, col).isExit()) {
-            System.out.println("YOU WIN!");
-            // later: stop timer, show dialog, etc.
-        }
-    }
-
-    // ------------------------------------------------------------
-    // ZOMBIE–ZOMBIE COLLISION HANDLING
-    // ------------------------------------------------------------
-
-    private void handleZombieCollisions() {
-        for (int i = 0; i < zombies.size(); i++) {
-            Zombie a = zombies.get(i);
-
-            for (int j = i + 1; j < zombies.size(); j++) {
-                Zombie b = zombies.get(j);
-
-                if (a.isInCollisionCooldown() || b.isInCollisionCooldown()) {
-                    continue;
-                }
-
-                double dx = b.getX() - a.getX();
-                double dy = b.getY() - a.getY();
-
-                double dist = Math.sqrt(dx * dx + dy * dy);
-                double minDist = Zombie.SIZE;
-
-                if (dist < minDist) {
-
-                    a.triggerCollisionCooldown();
-                    b.triggerCollisionCooldown();
-
-                    b.chooseNewDirection();
-
-                    double overlap = minDist - dist;
-
-                    if (dist == 0) {
-                        dx = 1;
-                        dy = 0;
-                        dist = 1;
-                    }
-
-                    double pushX = (dx / dist) * (overlap / 2);
-                    double pushY = (dy / dist) * (overlap / 2);
-
-                    double aNewX = a.getX() - pushX;
-                    double aNewY = a.getY() - pushY;
-
-                    double bNewX = b.getX() + pushX;
-                    double bNewY = b.getY() + pushY;
-
-                    boolean aSafe = !a.collidesWithWall(aNewX, aNewY);
-                    boolean bSafe = !b.collidesWithWall(bNewX, bNewY);
-
-                    if (aSafe) a.setPosition(aNewX, aNewY);
-                    if (bSafe) b.setPosition(bNewX, bNewY);
-                }
-            }
-        }
-    }
-
-    // ------------------------------------------------------------
-    // DRAWING
-    // ------------------------------------------------------------
+    // ---------------------------------------------------------
+    // Rendering
+    // ---------------------------------------------------------
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
+        int tileSize = GameConstant.TILE_SIZE;
+
+        // Draw maze
         for (int r = 0; r < maze.getRows(); r++) {
             for (int c = 0; c < maze.getCols(); c++) {
-                maze.getTile(r, c).draw(g2, TILE_SIZE);
+                maze.getTile(r, c).draw(g2, tileSize);
             }
         }
 
-        g2.setColor(Color.BLUE);
-        g2.fillOval(
-            (int) player.getX(),
-            (int) player.getY(),
-            player.getSize(),
-            player.getSize()
-        );
-
-        g2.setColor(Color.RED);
-        for (Zombie z : zombies) {
-            g2.fillOval(
-                (int) z.getX(),
-                (int) z.getY(),
-                z.getSize(),
-                z.getSize()
-            );
+        // Draw player
+        if (player.getSprite() != null) {
+            g2.drawImage(player.getSprite(),
+                         (int) player.getX(),
+                         (int) player.getY(),
+                         Player.SIZE, Player.SIZE, null);
+        } else {
+            g2.setColor(Color.BLUE);
+            g2.fillOval((int) player.getX(), (int) player.getY(),
+                        Player.SIZE, Player.SIZE);
         }
 
+        // Draw zombies
+        for (Zombie z : zombies) {
+            if (z.getSprite() != null) {
+                g2.drawImage(z.getSprite(),
+                             (int) z.getX(),
+                             (int) z.getY(),
+                             Zombie.SIZE, Zombie.SIZE, null);
+            } else {
+                g2.setColor(Color.RED);
+                g2.fillOval((int) z.getX(), (int) z.getY(),
+                            Zombie.SIZE, Zombie.SIZE);
+            }
+        }
+
+        // Draw collectibles
         g2.setColor(Color.YELLOW);
         for (Collectible c : collectibles) {
-            g2.fillOval(
-                (int) c.getX(),
-                (int) c.getY(),
-                c.getSize(),
-                c.getSize()
-            );
-        }
-
-        // optional: highlight exit when unlocked
-        if (exitUnlocked) {
-            // add glow or effect if you want
+            if (!c.isCollected()) {
+                g2.fillOval((int) c.getX(), (int) c.getY(),
+                            Collectible.SIZE, Collectible.SIZE);
+            }
         }
     }
+
+    // ---------------------------------------------------------
+    // Keyboard Input
+    // ---------------------------------------------------------
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_W: up = true; break;
+            case KeyEvent.VK_S: down = true; break;
+            case KeyEvent.VK_A: left = true; break;
+            case KeyEvent.VK_D: right = true; break;
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_W: up = false; break;
+            case KeyEvent.VK_S: down = false; break;
+            case KeyEvent.VK_A: left = false; break;
+            case KeyEvent.VK_D: right = false; break;
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
 }

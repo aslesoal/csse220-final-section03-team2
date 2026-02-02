@@ -1,80 +1,80 @@
 package model;
 
+import java.awt.Image;
 import java.util.Random;
+import javax.imageio.ImageIO;
 
+/**
+ * Represents a zombie enemy that wanders the maze.
+ * Zombies move in straight lines until they hit a wall,
+ * then choose a new direction.
+ */
 public class Zombie {
 
+    /** Rendered size of the zombie sprite. */
     public static final int SIZE = 24;
 
     private double x;
     private double y;
-
     private double dx;
     private double dy;
-
     private double speed = 2.5;
 
     private Maze maze;
     private Random rand = new Random();
+    private Image sprite;
 
-    // Collision cooldown (grace period)
     private int collisionCooldown = 0;
-
-    // Wander-zone timer
     private int wanderTimer = 0;
 
+    /**
+     * Creates a zombie at the given maze row/column.
+     */
     public Zombie(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
-        this.x = startCol * 32 + (32 - SIZE) / 2.0;
-        this.y = startRow * 32 + (32 - SIZE) / 2.0;
+        // Center zombie in tile
+        this.x = startCol * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
+        this.y = startRow * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
 
+        // Prevent spawning inside walls
         if (collidesWithWallInternal(x, y)) {
-            throw new IllegalArgumentException(
-                "Zombie spawned inside a wall at row=" + startRow + ", col=" + startCol
-            );
+            throw new IllegalArgumentException("Zombie spawned inside a wall at row=" + startRow + ", col=" + startCol);
+        }
+
+        // Load sprite with safe fallback
+        try {
+            sprite = ImageIO.read(getClass().getResource(GameConstant.ZOMBIE_SPRITE));
+        } catch (Exception e) {
+            sprite = null;
+            System.err.println("Zombie sprite not found — using fallback.");
         }
 
         chooseNewDirection();
     }
 
+    public Image getSprite() { return sprite; }
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return SIZE; }
 
-    public void setPosition(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
+    public boolean isInCollisionCooldown() { return collisionCooldown > 0; }
+    public void triggerCollisionCooldown() { collisionCooldown = 20; }
+    private void tickCooldown() { if (collisionCooldown > 0) collisionCooldown--; }
 
-    // Cooldown helpers
-    public boolean isInCollisionCooldown() {
-        return collisionCooldown > 0;
-    }
-
-    public void triggerCollisionCooldown() {
-        collisionCooldown = 20; // ~0.33 seconds
-    }
-
-    private void tickCooldown() {
-        if (collisionCooldown > 0) collisionCooldown--;
-    }
-
+    /** Updates zombie movement and direction changes. */
     public void update() {
         tickCooldown();
 
-        // Wander-zone Option C1 (light upward bias)
+        // Occasional upward bias when in bottom half
         wanderTimer++;
-        if (wanderTimer > 180) { // every ~3 seconds
-            int row = (int)(y / 32);
+        if (wanderTimer > 180) {
+            int row = (int)(y / GameConstant.TILE_SIZE);
             int mid = maze.getRows() / 2;
 
-            if (row > mid) {
-                // 35% chance to bias upward
-                if (rand.nextInt(100) < 35) {
-                    dy = -speed;
-                    dx = 0;
-                }
+            if (row > mid && rand.nextInt(100) < 35) {
+                dy = -speed;
+                dx = 0;
             }
 
             wanderTimer = 0;
@@ -92,6 +92,7 @@ public class Zombie {
         y = newY;
     }
 
+    /** Chooses a new direction based on current movement. */
     public void chooseNewDirection() {
         boolean movingHoriz = Math.abs(dx) > 0;
         boolean movingVert  = Math.abs(dy) > 0;
@@ -101,11 +102,9 @@ public class Zombie {
             double testDy = 0;
 
             if (movingVert) {
-                if (rand.nextBoolean()) testDx = speed;
-                else testDx = -speed;
+                testDx = rand.nextBoolean() ? speed : -speed;
             } else if (movingHoriz) {
-                if (rand.nextBoolean()) testDy = speed;
-                else testDy = -speed;
+                testDy = rand.nextBoolean() ? speed : -speed;
             } else {
                 int dir = rand.nextInt(4);
                 switch (dir) {
@@ -127,12 +126,9 @@ public class Zombie {
         dy = 0;
     }
 
-    public boolean collidesWithWall(double px, double py) {
-        return collidesWithWallInternal(px, py);
-    }
-
+    /** Checks collision with walls using zombie's bounding box. */
     private boolean collidesWithWallInternal(double px, double py) {
-        int tileSize = 32;
+        int tileSize = GameConstant.TILE_SIZE;
 
         int left   = (int) px;
         int right  = (int) (px + SIZE);

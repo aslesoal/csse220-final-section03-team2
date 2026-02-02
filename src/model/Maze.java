@@ -1,9 +1,5 @@
 package model;
 
-/**
- * Stores the maze layout and provides helper methods
- * for checking walkability and tile types.
- */
 public class Maze {
 
     private final Tile[][] grid;
@@ -31,7 +27,7 @@ public class Maze {
     }
 
     public boolean isExit(int row, int col) {
-        return inBounds(row, col) && grid[row][col].getType() == TileType.EXIT;
+        return inBounds(row, col) && grid[row][col].isExit();
     }
 
     public Tile getTile(int row, int col) {
