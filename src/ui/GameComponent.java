@@ -8,16 +8,12 @@ import model.*;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Random;
 
-/**
- * Main game panel responsible for rendering and updating the game.
- * Handles player movement, zombie AI, collectible logic, exit unlocking,
- * and drawing.
- */
 public class GameComponent extends JPanel implements KeyListener {
 
     private Maze maze;
@@ -27,8 +23,17 @@ public class GameComponent extends JPanel implements KeyListener {
 
     private boolean up, down, left, right;
 
-    /** Exit starts locked. Unlocks only when all collectibles are collected. */
     private boolean exitUnlocked = false;
+
+    // Game end states
+    private boolean win = false;
+    private boolean gameOver = false;
+    private boolean paused = false;
+
+    // Fade animation
+    private float winAlpha = 0f;
+    private float gameOverAlpha = 0f;
+    private float pauseAlpha = 0f;
 
     public GameComponent() {
         setFocusable(true);
@@ -37,15 +42,38 @@ public class GameComponent extends JPanel implements KeyListener {
         maze = new Maze(MazeLayout.MAZE);
         player = new Player(1, 1, maze);
 
-        spawnZombies();        // 6 zombies
-        spawnCollectibles();   // 8 collectibles
+        spawnZombies();
+        spawnCollectibles();
 
         Timer timer = new Timer(16, e -> updateGame());
         timer.start();
     }
 
     // ---------------------------------------------------------
-    // Helper Methods for Spawning
+    // Restart System
+    // ---------------------------------------------------------
+
+    private void restartGame() {
+        win = false;
+        gameOver = false;
+        paused = false;
+
+        winAlpha = 0f;
+        gameOverAlpha = 0f;
+        pauseAlpha = 0f;
+
+        player = new Player(1, 1, maze);
+
+        spawnZombies();
+        spawnCollectibles();
+
+        up = down = left = right = false;
+
+        repaint();
+    }
+
+    // ---------------------------------------------------------
+    // Helper Methods
     // ---------------------------------------------------------
 
     private int[] getRandomFloorTile(int rowMin, int rowMax) {
@@ -76,15 +104,13 @@ public class GameComponent extends JPanel implements KeyListener {
         for (Zombie z : zombies) {
             double dx = x - z.getX();
             double dy = y - z.getY();
-            if (Math.sqrt(dx * dx + dy * dy) < 40) {
-                return true;
-            }
+            if (Math.sqrt(dx * dx + dy * dy) < 40) return true;
         }
         return false;
     }
 
     // ---------------------------------------------------------
-    // Zombie Spawning (4 total)
+    // Spawning
     // ---------------------------------------------------------
 
     private void spawnZombies() {
@@ -93,10 +119,13 @@ public class GameComponent extends JPanel implements KeyListener {
         int rows = maze.getRows();
         int mid = rows / 2;
 
-        int zombiesTop = 3;
-        int zombiesBottom = 3;
+        int zombiesTop = 4;
+        int zombiesBottom = 4;
 
-        // Top half
+        double playerX = player.getX();
+        double playerY = player.getY();
+        double minDist = 4 * GameConstant.TILE_SIZE;
+
         for (int i = 0; i < zombiesTop; i++) {
             int[] pos;
             double x, y;
@@ -107,16 +136,20 @@ public class GameComponent extends JPanel implements KeyListener {
                 y = pos[0] * GameConstant.TILE_SIZE + 4;
 
                 boolean ok = true;
+
                 for (Zombie z : zombies) {
                     if (tooClose(x, y, z.getX(), z.getY())) ok = false;
                 }
+
+                if (Math.sqrt(Math.pow(x - playerX, 2) + Math.pow(y - playerY, 2)) < minDist)
+                    ok = false;
+
                 if (ok) break;
             }
 
             zombies.add(new Zombie(pos[0], pos[1], maze));
         }
 
-        // Bottom half
         for (int i = 0; i < zombiesBottom; i++) {
             int[] pos;
             double x, y;
@@ -127,19 +160,20 @@ public class GameComponent extends JPanel implements KeyListener {
                 y = pos[0] * GameConstant.TILE_SIZE + 4;
 
                 boolean ok = true;
+
                 for (Zombie z : zombies) {
                     if (tooClose(x, y, z.getX(), z.getY())) ok = false;
                 }
+
+                if (Math.sqrt(Math.pow(x - playerX, 2) + Math.pow(y - playerY, 2)) < minDist)
+                    ok = false;
+
                 if (ok) break;
             }
 
             zombies.add(new Zombie(pos[0], pos[1], maze));
         }
     }
-
-    // ---------------------------------------------------------
-    // Collectible Spawning (8 total)
-    // ---------------------------------------------------------
 
     private void spawnCollectibles() {
         collectibles.clear();
@@ -159,10 +193,7 @@ public class GameComponent extends JPanel implements KeyListener {
                 boolean ok = true;
 
                 for (Collectible c : collectibles) {
-                    if (collectibleTooClose(x, y, c.getX(), c.getY())) {
-                        ok = false;
-                        break;
-                    }
+                    if (collectibleTooClose(x, y, c.getX(), c.getY())) ok = false;
                 }
 
                 if (ok && tooCloseToZombie(x, y)) ok = false;
@@ -179,6 +210,14 @@ public class GameComponent extends JPanel implements KeyListener {
     // ---------------------------------------------------------
 
     private void updateGame() {
+        if (paused || gameOver || win) {
+            repaint();
+            return;
+        }
+
+        player.tickInvincibility();
+        player.tickFlash();
+
         double speed = player.getSpeed();
         double dx = 0, dy = 0;
 
@@ -189,52 +228,53 @@ public class GameComponent extends JPanel implements KeyListener {
 
         if (dx != 0 || dy != 0) player.move(dx, dy);
 
-        // Update zombies
+        // Zombie collisions → lose life (no teleport)
         for (Zombie z : zombies) {
             z.update();
 
             if (!z.isInCollisionCooldown()) {
-                if (overlaps(player.getX(), player.getY(), Player.SIZE,
+                if (!player.isInvincible() &&
+                    overlaps(player.getX(), player.getY(), Player.SIZE,
                              z.getX(), z.getY(), Zombie.SIZE)) {
 
                     z.triggerCollisionCooldown();
-                    player.setPosition(
-                        1 * GameConstant.TILE_SIZE + 7,
-                        1 * GameConstant.TILE_SIZE + 7
-                    );
+                    player.loseLife();
+                    player.triggerInvincibility();
+                    player.triggerFlash();
+
+                    if (player.isDead()) {
+                        gameOver = true;
+                        up = down = left = right = false;
+                    }
                 }
             }
         }
 
-        // Collectibles
+        // Collectibles → score
         for (Collectible c : collectibles) {
             if (!c.isCollected()) {
                 if (overlaps(player.getX(), player.getY(), Player.SIZE,
                              c.getX(), c.getY(), Collectible.SIZE)) {
                     c.collect();
+                    player.addScore(10);
                 }
             }
         }
 
-        // Check if all collectibles are collected
+        // Unlock exit
         boolean allCollected = true;
         for (Collectible c : collectibles) {
-            if (!c.isCollected()) {
-                allCollected = false;
-                break;
-            }
+            if (!c.isCollected()) allCollected = false;
         }
+        if (allCollected) exitUnlocked = true;
 
-        if (allCollected) {
-            exitUnlocked = true;
-        }
-
-        // Win condition only when exit is unlocked
+        // Win condition
         int row = (int)(player.getY() / GameConstant.TILE_SIZE);
         int col = (int)(player.getX() / GameConstant.TILE_SIZE);
 
         if (exitUnlocked && maze.isExit(row, col)) {
-            System.out.println("You win!");
+            win = true;
+            up = down = left = right = false;
         }
 
         repaint();
@@ -300,6 +340,85 @@ public class GameComponent extends JPanel implements KeyListener {
                             Collectible.SIZE, Collectible.SIZE);
             }
         }
+
+        // ---------------------------------------------------------
+        // HUD BAR (never covers maze)
+        // ---------------------------------------------------------
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRect(0, 0, getWidth(), 40);
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Arial", Font.BOLD, 20));
+        g2.drawString("Lives: " + player.getLives(), 10, 25);
+        g2.drawString("Score: " + player.getScore(), 150, 25);
+        g2.drawString("Press R to Restart", 300, 25);
+
+        // ---------------------------------------------------------
+        // Damage flash (short red overlay)
+        // ---------------------------------------------------------
+        if (player.isFlashing()) {
+            g2.setColor(new Color(1f, 0f, 0f, 0.35f));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+        }
+
+        // ---------------------------------------------------------
+        // GAME OVER FADE-IN
+        // ---------------------------------------------------------
+        if (gameOver) {
+            if (gameOverAlpha < 1f) {
+                gameOverAlpha += 0.01f;
+                if (gameOverAlpha > 1f) gameOverAlpha = 1f;
+                repaint();
+            }
+
+            g2.setColor(new Color(0f, 0f, 0f, gameOverAlpha * 0.6f));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            g2.setFont(new Font("Arial", Font.BOLD, 48));
+            g2.setColor(new Color(1f, 0f, 0f, gameOverAlpha));
+            g2.drawString("GAME OVER", 150, 300);
+        }
+
+        // ---------------------------------------------------------
+        // WIN SCREEN FADE-IN
+        // ---------------------------------------------------------
+        if (win) {
+            if (winAlpha < 1f) {
+                winAlpha += 0.01f;
+                if (winAlpha > 1f) winAlpha = 1f;
+                repaint();
+            }
+
+            g2.setColor(new Color(0f, 0f, 0f, winAlpha * 0.6f));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            g2.setFont(new Font("Arial", Font.BOLD, 48));
+            g2.setColor(new Color(0f, 1f, 0f, winAlpha));
+            g2.drawString("YOU WIN!", 150, 300);
+        }
+
+        // ---------------------------------------------------------
+        // PAUSE SCREEN FADE-IN
+        // ---------------------------------------------------------
+        if (paused) {
+            if (pauseAlpha < 1f) {
+                pauseAlpha += 0.05f;
+                if (pauseAlpha > 1f) pauseAlpha = 1f;
+                repaint();
+            }
+
+            g2.setColor(new Color(0f, 0f, 0f, pauseAlpha * 0.6f));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            g2.setFont(new Font("Arial", Font.BOLD, 48));
+            g2.setColor(new Color(1f, 1f, 0f, pauseAlpha));
+            g2.drawString("PAUSED", 180, 300);
+
+            g2.setFont(new Font("Arial", Font.BOLD, 24));
+            g2.drawString("Press P to Resume", 180, 350);
+        } else {
+            pauseAlpha = 0f;
+        }
     }
 
     // ---------------------------------------------------------
@@ -308,6 +427,23 @@ public class GameComponent extends JPanel implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
+
+        // Restart key works anytime
+        if (e.getKeyCode() == KeyEvent.VK_R) {
+            restartGame();
+            return;
+        }
+
+        // Pause toggle
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            if (!win && !gameOver) {
+                paused = !paused;
+            }
+            return;
+        }
+
+        if (paused || gameOver || win) return;
+
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W: up = true; break;
             case KeyEvent.VK_S: down = true; break;
@@ -318,6 +454,8 @@ public class GameComponent extends JPanel implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
+        if (paused || gameOver || win) return;
+
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W: up = false; break;
             case KeyEvent.VK_S: down = false; break;

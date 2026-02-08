@@ -3,13 +3,8 @@ package model;
 import java.awt.Image;
 import javax.imageio.ImageIO;
 
-/**
- * Represents the player character.
- * The player moves smoothly in pixel space and collides with walls.
- */
 public class Player {
 
-    /** Rendered size of the player sprite. */
     public static final int SIZE = 18;
 
     private double x;
@@ -19,21 +14,26 @@ public class Player {
     private Maze maze;
     private Image sprite;
 
-    /**
-     * Creates a player at the given maze row/column.
-     */
+    // Lives + Score
+    private int lives = 4;
+    private int score = 0;
+
+    // Invincibility frames (grace period)
+    private int invincibleTimer = 0;
+
+    // Short red flash timer
+    private int flashTimer = 0;
+
     public Player(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
-        // Center the player inside the tile
         this.x = startCol * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
         this.y = startRow * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
 
-        // Load sprite using ImageIO with safe fallback
         try {
             sprite = ImageIO.read(getClass().getResource(GameConstant.PLAYER_SPRITE));
         } catch (Exception e) {
-            sprite = null;  // fallback mode
+            sprite = null;
             System.err.println("Player sprite not found — using fallback.");
         }
     }
@@ -44,13 +44,28 @@ public class Player {
     public int getSize() { return SIZE; }
     public double getSpeed() { return speed; }
 
-    /** Sets the player's position directly (used for respawning). */
+    public int getLives() { return lives; }
+    public int getScore() { return score; }
+
+    public void addScore(int amount) { score += amount; }
+    public void loseLife() { lives--; }
+    public boolean isDead() { return lives <= 0; }
+
+    // Invincibility
+    public boolean isInvincible() { return invincibleTimer > 0; }
+    public void triggerInvincibility() { invincibleTimer = 60; } // 1 second
+    public void tickInvincibility() { if (invincibleTimer > 0) invincibleTimer--; }
+
+    // Flash effect
+    public void triggerFlash() { flashTimer = 10; } // short flash
+    public boolean isFlashing() { return flashTimer > 0; }
+    public void tickFlash() { if (flashTimer > 0) flashTimer--; }
+
     public void setPosition(double x, double y) {
         this.x = x;
         this.y = y;
     }
 
-    /** Attempts to move the player by dx, dy, blocking movement into walls. */
     public void move(double dx, double dy) {
         double newX = x + dx;
         double newY = y + dy;
@@ -59,7 +74,6 @@ public class Player {
         if (!collidesWithWall(x, newY)) y = newY;
     }
 
-    /** Checks whether the player's bounding box intersects a wall tile. */
     private boolean collidesWithWall(double px, double py) {
         int tileSize = GameConstant.TILE_SIZE;
 
