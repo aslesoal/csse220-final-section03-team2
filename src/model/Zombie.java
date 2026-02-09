@@ -6,7 +6,7 @@ import java.util.Random;
 
 public class Zombie {
 
-    public static final int SIZE = 18;
+    public static final int SIZE = 22;
 
     private double x;
     private double y;

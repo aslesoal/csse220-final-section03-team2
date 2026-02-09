@@ -29,7 +29,6 @@ public class GameComponent extends JPanel implements KeyListener {
         setFocusable(true);
         addKeyListener(this);
 
-        // Clean 650x650 window
         setPreferredSize(new Dimension(650, 650));
 
         maze = new Maze(MazeLayout.MAZE);
@@ -76,6 +75,10 @@ public class GameComponent extends JPanel implements KeyListener {
             z.update();
         }
 
+        for (Collectible c : collectibles) {
+            c.updateValue();
+        }
+
         handleCollisions();
         dangerDetector.update(player, zombies);
     }
@@ -109,9 +112,18 @@ public class GameComponent extends JPanel implements KeyListener {
             if (!c.isCollected() &&
                 overlap(player.getX(), player.getY(), Player.SIZE,
                         c.getX(), c.getY(), Collectible.SIZE)) {
-                c.collect();
-                player.addScore(10);
+
+                int earned = c.collect();
+                player.addScore(earned);
+
+                // NEW: Reset all remaining collectibles to 1000
+                for (Collectible other : collectibles) {
+                    if (!other.isCollected()) {
+                        other.resetValue();
+                    }
+                }
             }
+
             if (c.isCollected()) collectedCount++;
         }
 
@@ -152,7 +164,7 @@ public class GameComponent extends JPanel implements KeyListener {
 
         renderer.renderHUD(g2, player, dangerDetector.isInDanger(), width, height);
         renderer.renderFlash(g2, player, width, height);
-        renderer.renderOverlays(g2, gsm, width, height);
+        renderer.renderOverlays(g2, gsm, player, width, height);
 
         g2.dispose();
     }
