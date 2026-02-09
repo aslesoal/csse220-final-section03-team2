@@ -3,34 +3,23 @@ package ui;
 import javax.swing.JFrame;
 
 /**
- * GameWindow creates the main application window and
- * embeds the GameComponent inside it.
- *
- * This class contains no game logic; it only manages the UI frame.
+ * GameWindow is required by MainApp. It simply creates the JFrame
+ * and attaches the GameComponent. All game logic lives elsewhere.
  */
 public class GameWindow {
 
-    /**
-     * Creates and displays the game window.
-     */
-	public static void show() {
-	    System.out.println("Creating JFrame...");
-	    JFrame frame = new JFrame("Maze Game");
+    public static void show() {
+        JFrame frame = new JFrame("Zombie Maze");
 
-	    System.out.println("Creating GameComponent...");
-	    GameComponent comp = new GameComponent();
+        GameComponent game = new GameComponent();
+        frame.add(game);
 
-	    System.out.println("Adding component...");
-	    frame.add(comp);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.setSize(600, 600); // Adjust if needed
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
 
-	    System.out.println("Setting size...");
-	    frame.setSize(600, 600);
-
-	    System.out.println("Showing window...");
-	    frame.setVisible(true);
-
-	    System.out.println("Window should now be visible.");
-	}
-
-    
+        game.requestFocusInWindow();
+    }
 }

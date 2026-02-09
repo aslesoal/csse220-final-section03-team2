@@ -11,18 +11,16 @@ public class Player {
     private double y;
     private double speed = 3.0;
 
-    private Maze maze;
+    private final Maze maze;
     private Image sprite;
 
-    // Lives + Score
-    private int lives = 4;
+    private int lives = GameConstant.INITIAL_LIVES;
     private int score = 0;
 
-    // Invincibility frames (grace period)
     private int invincibleTimer = 0;
-
-    // Short red flash timer
     private int flashTimer = 0;
+
+    private double facingAngle = 0.0;
 
     public Player(int startRow, int startCol, Maze maze) {
         this.maze = maze;
@@ -31,10 +29,11 @@ public class Player {
         this.y = startRow * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
 
         try {
-            sprite = ImageIO.read(getClass().getResource(GameConstant.PLAYER_SPRITE));
+            sprite = ImageIO.read(Player.class.getResource(GameConstant.PLAYER_SPRITE));
+            System.out.println("Loaded player sprite from: " + Player.class.getResource(GameConstant.PLAYER_SPRITE));
         } catch (Exception e) {
             sprite = null;
-            System.err.println("Player sprite not found — using fallback.");
+            System.err.println("Player sprite not found: " + e);
         }
     }
 
@@ -42,7 +41,6 @@ public class Player {
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return SIZE; }
-    public double getSpeed() { return speed; }
 
     public int getLives() { return lives; }
     public int getScore() { return score; }
@@ -51,22 +49,37 @@ public class Player {
     public void loseLife() { lives--; }
     public boolean isDead() { return lives <= 0; }
 
-    // Invincibility
     public boolean isInvincible() { return invincibleTimer > 0; }
-    public void triggerInvincibility() { invincibleTimer = 60; } // 1 second
+    public void triggerInvincibility() { invincibleTimer = GameConstant.INVINCIBILITY_FRAMES; }
     public void tickInvincibility() { if (invincibleTimer > 0) invincibleTimer--; }
 
-    // Flash effect
-    public void triggerFlash() { flashTimer = 10; } // short flash
     public boolean isFlashing() { return flashTimer > 0; }
+    public void triggerFlash() { flashTimer = GameConstant.FLASH_FRAMES; }
     public void tickFlash() { if (flashTimer > 0) flashTimer--; }
 
-    public void setPosition(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
+    public double getFacingAngle() { return facingAngle; }
 
-    public void move(double dx, double dy) {
+    public void move(boolean up, boolean down, boolean left, boolean right) {
+
+        double dx = 0;
+        double dy = 0;
+
+        if (up)    dy -= speed;
+        if (down)  dy += speed;
+        if (left)  dx -= speed;
+        if (right) dx += speed;
+
+        // Normalize diagonal movement
+        if (dx != 0 && dy != 0) {
+            dx *= 0.707;
+            dy *= 0.707;
+        }
+
+        // Update facing angle
+        if (dx != 0 || dy != 0) {
+            facingAngle = Math.atan2(dy, dx);
+        }
+
         double newX = x + dx;
         double newY = y + dy;
 

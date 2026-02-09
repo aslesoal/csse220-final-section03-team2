@@ -1,39 +1,47 @@
 package model;
 
+import java.awt.Graphics2D;
+
+/**
+ * Represents the maze grid and provides tile-level queries.
+ */
 public class Maze {
 
-    private final Tile[][] grid;
+    private final Tile[][] tiles;
     private final int rows;
     private final int cols;
 
     public Maze(TileType[][] layout) {
-        this.rows = layout.length;
-        this.cols = layout[0].length;
-        this.grid = new Tile[rows][cols];
+        rows = layout.length;
+        cols = layout[0].length;
+        tiles = new Tile[rows][cols];
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                grid[r][c] = new Tile(layout[r][c], r, c);
+                tiles[r][c] = new Tile(layout[r][c]);
             }
         }
     }
 
-    public boolean inBounds(int row, int col) {
-        return row >= 0 && row < rows && col >= 0 && col < cols;
-    }
+    public int getRows() { return rows; }
+    public int getCols() { return cols; }
 
     public boolean isWalkable(int row, int col) {
-        return inBounds(row, col) && grid[row][col].isWalkable();
+        if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
+        return tiles[row][col].isWalkable();
     }
 
     public boolean isExit(int row, int col) {
-        return inBounds(row, col) && grid[row][col].isExit();
+        if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
+        return tiles[row][col].isExit();
     }
 
-    public Tile getTile(int row, int col) {
-        return grid[row][col];
+    public void draw(Graphics2D g2) {
+        int tileSize = GameConstant.TILE_SIZE;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                tiles[r][c].draw(g2, r, c, tileSize);
+            }
+        }
     }
-
-    public int getRows() { return rows; }
-    public int getCols() { return cols; }
 }
