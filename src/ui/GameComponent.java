@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.List;
+import java.io.File;
 
 public class GameComponent extends JPanel implements KeyListener {
 
@@ -32,7 +33,7 @@ public class GameComponent extends JPanel implements KeyListener {
         // Clean 650x650 window
         setPreferredSize(new Dimension(650, 650));
 
-        maze = new Maze(MazeLayout.MAZE);
+        maze = new Maze(new File("bin/levels/level1.txt"));
         spawner = new Spawner(maze);
 
         resetGameState();
