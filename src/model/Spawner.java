@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Responsible for spawning zombies and collectibles.
- */
 public class Spawner {
 
     private final Maze maze;
@@ -16,89 +13,19 @@ public class Spawner {
         this.maze = maze;
     }
 
-    private int[] getRandomFloorTile(int rowMin, int rowMax) {
-        int row, col;
-        do {
-            row = random.nextInt(rowMax - rowMin + 1) + rowMin;
-            col = random.nextInt(maze.getCols());
-        } while (!maze.isWalkable(row, col));
-        return new int[]{row, col};
-    }
-
-    private boolean tooClose(double x1, double y1, double x2, double y2, double minDist) {
-        double dx = x1 - x2;
-        double dy = y1 - y2;
-        return Math.sqrt(dx * dx + dy * dy) < minDist;
-    }
-
     public List<Zombie> spawnZombies(Player player) {
         List<Zombie> zombies = new ArrayList<>();
 
-        int rows = maze.getRows();
-        int mid = rows / 2;
+        int count = GameConstant.ZOMBIE_COUNT;
 
-        int zombiesTop = GameConstant.ZOMBIE_COUNT / 2;
-        int zombiesBottom = GameConstant.ZOMBIE_COUNT - zombiesTop;
+        while (zombies.size() < count) {
+            int row = random.nextInt(maze.getRows());
+            int col = random.nextInt(maze.getCols());
 
-        double playerX = player.getX();
-        double playerY = player.getY();
-        double minDistFromPlayer = 4 * GameConstant.TILE_SIZE;
-        double minDistBetweenZombies = 40;
+            if (!maze.isWalkable(row, col)) continue;
+            if (distance(row, col, player) < 3) continue;
 
-        for (int i = 0; i < zombiesTop; i++) {
-            int[] pos;
-            double x, y;
-
-            while (true) {
-                pos = getRandomFloorTile(1, mid - 1);
-                x = pos[1] * GameConstant.TILE_SIZE + 4;
-                y = pos[0] * GameConstant.TILE_SIZE + 4;
-
-                boolean ok = true;
-
-                for (Zombie z : zombies) {
-                    if (tooClose(x, y, z.getX(), z.getY(), minDistBetweenZombies)) {
-                        ok = false;
-                        break;
-                    }
-                }
-
-                if (ok && tooClose(x, y, playerX, playerY, minDistFromPlayer)) {
-                    ok = false;
-                }
-
-                if (ok) break;
-            }
-
-            zombies.add(new Zombie(pos[0], pos[1], maze));
-        }
-
-        for (int i = 0; i < zombiesBottom; i++) {
-            int[] pos;
-            double x, y;
-
-            while (true) {
-                pos = getRandomFloorTile(mid + 1, rows - 2);
-                x = pos[1] * GameConstant.TILE_SIZE + 4;
-                y = pos[0] * GameConstant.TILE_SIZE + 4;
-
-                boolean ok = true;
-
-                for (Zombie z : zombies) {
-                    if (tooClose(x, y, z.getX(), z.getY(), minDistBetweenZombies)) {
-                        ok = false;
-                        break;
-                    }
-                }
-
-                if (ok && tooClose(x, y, playerX, playerY, minDistFromPlayer)) {
-                    ok = false;
-                }
-
-                if (ok) break;
-            }
-
-            zombies.add(new Zombie(pos[0], pos[1], maze));
+            zombies.add(new Zombie(row, col, maze));
         }
 
         return zombies;
@@ -107,44 +34,55 @@ public class Spawner {
     public List<Collectible> spawnCollectibles(List<Zombie> zombies) {
         List<Collectible> collectibles = new ArrayList<>();
 
-        int total = GameConstant.COLLECTIBLE_COUNT;
-        double minDistCollectibles = 32;
-        double minDistToZombie = 40;
+        int count = GameConstant.COLLECTIBLE_COUNT;
 
-        for (int i = 0; i < total; i++) {
-            int[] pos;
-            double x, y;
+        while (collectibles.size() < count) {
+            int row = random.nextInt(maze.getRows());
+            int col = random.nextInt(maze.getCols());
 
-            while (true) {
-                pos = getRandomFloorTile(1, maze.getRows() - 2);
+            if (!maze.isWalkable(row, col)) continue;
 
-                x = pos[1] * GameConstant.TILE_SIZE + 8;
-                y = pos[0] * GameConstant.TILE_SIZE + 8;
+            boolean tooClose = false;
 
-                boolean ok = true;
-
-                for (Collectible c : collectibles) {
-                    if (tooClose(x, y, c.getX(), c.getY(), minDistCollectibles)) {
-                        ok = false;
-                        break;
-                    }
+            for (Zombie z : zombies) {
+                if (distance(row, col, z) < 3) {
+                    tooClose = true;
+                    break;
                 }
-
-                if (ok) {
-                    for (Zombie z : zombies) {
-                        if (tooClose(x, y, z.getX(), z.getY(), minDistToZombie)) {
-                            ok = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (ok) break;
             }
+            if (tooClose) continue;
 
-            collectibles.add(new Collectible(pos[0], pos[1]));
+            for (Collectible c : collectibles) {
+                int cRow = (int) (c.getY() / GameConstant.TILE_SIZE);
+                int cCol = (int) (c.getX() / GameConstant.TILE_SIZE);
+                if (Math.abs(cRow - row) < 2 && Math.abs(cCol - col) < 2) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            double x = col * GameConstant.TILE_SIZE +
+                       (GameConstant.TILE_SIZE - Collectible.SIZE) / 2.0;
+
+            double y = row * GameConstant.TILE_SIZE +
+                       (GameConstant.TILE_SIZE - Collectible.SIZE) / 2.0;
+
+            collectibles.add(new Collectible(x, y));
         }
 
         return collectibles;
+    }
+
+    private double distance(int row, int col, Player p) {
+        int pRow = (int) (p.getY() / GameConstant.TILE_SIZE);
+        int pCol = (int) (p.getX() / GameConstant.TILE_SIZE);
+        return Math.hypot(row - pRow, col - pCol);
+    }
+
+    private double distance(int row, int col, Zombie z) {
+        int zRow = (int) (z.getY() / GameConstant.TILE_SIZE);
+        int zCol = (int) (z.getX() / GameConstant.TILE_SIZE);
+        return Math.hypot(row - zRow, col - zCol);
     }
 }

@@ -6,9 +6,7 @@ import java.util.List;
 
 public class Renderer {
 
-    // -------------------------------
-    // Centered text helper (NEW)
-    // -------------------------------
+    // Centered text helper
     private void drawCenteredString(Graphics2D g2, String text, int y, int width) {
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(text);
@@ -16,24 +14,20 @@ public class Renderer {
         g2.drawString(text, x, y);
     }
 
-    // -------------------------------
     // WORLD RENDERING
-    // -------------------------------
     public void renderWorld(Graphics2D g2, Maze maze, Player player,
                             List<Zombie> zombies,
                             List<Collectible> collectibles,
                             int width, int height) {
 
-        int mazeSize = GameConstant.TILE_SIZE * maze.getRows(); // 480
+        int mazeSize = GameConstant.TILE_SIZE * maze.getRows();
         int offsetX = (width - mazeSize) / 2;
         int offsetY = (height - mazeSize) / 2;
 
         g2.translate(offsetX, offsetY);
 
-        // Draw maze
         maze.draw(g2);
 
-        // Draw collectibles
         g2.setColor(Color.YELLOW);
         for (Collectible c : collectibles) {
             if (!c.isCollected()) {
@@ -42,7 +36,6 @@ public class Renderer {
             }
         }
 
-        // Draw zombies
         for (Zombie z : zombies) {
             if (z.getSprite() != null) {
                 drawRotatedSprite(g2, z.getSprite(), z.getX(), z.getY(),
@@ -54,7 +47,6 @@ public class Renderer {
             }
         }
 
-        // Draw player
         if (player.getSprite() != null) {
             drawRotatedSprite(g2, player.getSprite(), player.getX(), player.getY(),
                               Player.SIZE, Player.SIZE, player.getFacingAngle());
@@ -80,9 +72,7 @@ public class Renderer {
         g2.setTransform(old);
     }
 
-    // -------------------------------
     // HUD
-    // -------------------------------
     public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
         g2.setColor(new Color(0, 0, 0, 180));
         g2.fillRect(0, 0, width, 40);
@@ -110,10 +100,8 @@ public class Renderer {
         }
     }
 
-    // -------------------------------
-    // OVERLAYS (UPDATED TO BE CENTERED)
-    // -------------------------------
-    public void renderOverlays(Graphics2D g2, GameStateManager gsm, int width, int height) {
+    // OVERLAYS (WIN/LOSS SHOW SCORE)
+    public void renderOverlays(Graphics2D g2, GameStateManager gsm, Player player, int width, int height) {
 
         // TITLE SCREEN
         if (gsm.isTitle() || gsm.getTitleAlpha() > 0f) {
@@ -143,7 +131,7 @@ public class Renderer {
             drawCenteredString(g2, "Press P to Resume", 310, width);
         }
 
-        // WIN SCREEN
+        // WIN SCREEN (SHOW SCORE)
         if (gsm.isWin()) {
             float a = gsm.getWinAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
@@ -151,10 +139,13 @@ public class Renderer {
 
             g2.setFont(new Font("Arial", Font.BOLD, 48));
             g2.setColor(new Color(0f, 1f, 0f, a));
-            drawCenteredString(g2, "YOU WIN!", 260, width);
+            drawCenteredString(g2, "YOU WIN!", 240, width);
+
+            g2.setFont(new Font("Arial", Font.BOLD, 28));
+            drawCenteredString(g2, "Final Score: " + player.getScore(), 300, width);
         }
 
-        // GAME OVER SCREEN
+        // GAME OVER SCREEN (SHOW SCORE)
         if (gsm.isGameOver()) {
             float a = gsm.getGameOverAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
@@ -162,10 +153,13 @@ public class Renderer {
 
             g2.setFont(new Font("Arial", Font.BOLD, 48));
             g2.setColor(new Color(1f, 0f, 0f, a));
-            drawCenteredString(g2, "GAME OVER", 260, width);
+            drawCenteredString(g2, "GAME OVER", 240, width);
+
+            g2.setFont(new Font("Arial", Font.BOLD, 28));
+            drawCenteredString(g2, "Final Score: " + player.getScore(), 300, width);
 
             g2.setFont(new Font("Arial", Font.BOLD, 24));
-            drawCenteredString(g2, "Press R to Restart", 310, width);
+            drawCenteredString(g2, "Press R to Restart", 350, width);
         }
     }
 }

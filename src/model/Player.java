@@ -30,10 +30,8 @@ public class Player {
 
         try {
             sprite = ImageIO.read(Player.class.getResource(GameConstant.PLAYER_SPRITE));
-            System.out.println("Loaded player sprite from: " + Player.class.getResource(GameConstant.PLAYER_SPRITE));
         } catch (Exception e) {
             sprite = null;
-            System.err.println("Player sprite not found: " + e);
         }
     }
 
@@ -46,6 +44,8 @@ public class Player {
     public int getScore() { return score; }
 
     public void addScore(int amount) { score += amount; }
+    public void setScore(int value) { score = value; }
+
     public void loseLife() { lives--; }
     public boolean isDead() { return lives <= 0; }
 
@@ -69,13 +69,11 @@ public class Player {
         if (left)  dx -= speed;
         if (right) dx += speed;
 
-        // Normalize diagonal movement
         if (dx != 0 && dy != 0) {
             dx *= 0.707;
             dy *= 0.707;
         }
 
-        // Update facing angle
         if (dx != 0 || dy != 0) {
             facingAngle = Math.atan2(dy, dx);
         }
@@ -104,5 +102,10 @@ public class Player {
                !maze.isWalkable(topRow, rightCol) ||
                !maze.isWalkable(bottomRow, leftCol) ||
                !maze.isWalkable(bottomRow, rightCol);
+    }
+
+    public void reset() {
+        lives = GameConstant.INITIAL_LIVES;
+        score = 0;
     }
 }

@@ -1,23 +1,42 @@
 package model;
 
-/**
- * Simple collectible item that increases score when picked up.
- */
 public class Collectible {
 
-    public static final int SIZE = 12;
+    public static final int SIZE = 16;
 
-    private final double x;
-    private final double y;
+    private double x;
+    private double y;
     private boolean collected = false;
 
-    public Collectible(int row, int col) {
-        this.x = col * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
-        this.y = row * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
+    private int maxValue = 1000;
+    private int currentValue = 1000;
+    private int decayRate = 2;
+
+    public Collectible(double x, double y) {
+        this.x = x;
+        this.y = y;
+        this.currentValue = maxValue;
     }
 
+    public void updateValue() {
+        if (!collected && currentValue > 0) {
+            currentValue -= decayRate;
+            if (currentValue < 0) currentValue = 0;
+        }
+    }
+
+    public int collect() {
+        collected = true;
+        return currentValue;
+    }
+
+    // NEW: Reset remaining collectibles to 1000
+    public void resetValue() {
+        currentValue = maxValue;
+    }
+
+    public boolean isCollected() { return collected; }
     public double getX() { return x; }
     public double getY() { return y; }
-    public boolean isCollected() { return collected; }
-    public void collect() { collected = true; }
+    public int getValue() { return currentValue; }
 }
