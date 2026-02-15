@@ -1,5 +1,6 @@
 package model;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -13,24 +14,73 @@ public class Spawner {
         this.maze = maze;
     }
 
+    // PLAYER SPAWN
+    public Player spawnPlayer() {
+        Point p = maze.getPlayerSpawn();
+        if (p != null) {
+            return new Player(p.x, p.y, maze);
+        }
+        return new Player(1, 1, maze); // fallback
+    }
+
+    // Manhattan distance helper
+    private int dist(int r1, int c1, int r2, int c2) {
+        return Math.abs(r1 - r2) + Math.abs(c1 - c2);
+    }
+
+    // ZOMBIE SPAWN
     public List<Zombie> spawnZombies(Player player) {
         List<Zombie> zombies = new ArrayList<>();
 
+        ArrayList<Point> spawnTiles = maze.getZombieSpawns();
+
+        // If map contains 'Z/z' tiles → spawn exactly there
+        if (!spawnTiles.isEmpty()) {
+            for (Point p : spawnTiles) {
+                zombies.add(new Zombie(p.x, p.y, maze));
+            }
+            return zombies;
+        }
+
+        // fallback: random spawning with spacing rules
         int count = GameConstant.ZOMBIE_COUNT;
 
+        // Player tile position
+        int pr = (int) ((player.getY() + Player.SIZE / 2) / GameConstant.TILE_SIZE);
+        int pc = (int) ((player.getX() + Player.SIZE / 2) / GameConstant.TILE_SIZE);
+
         while (zombies.size() < count) {
+
             int row = random.nextInt(maze.getRows());
             int col = random.nextInt(maze.getCols());
 
+            // Must be walkable
             if (!maze.isWalkable(row, col)) continue;
-            if (distance(row, col, player) < 3) continue;
 
+            // Must be at least 4 tiles from player
+            if (dist(row, col, pr, pc) < 4) continue;
+
+            // Must be at least 2 tiles from all existing zombies
+            boolean tooClose = false;
+            for (Zombie z : zombies) {
+                int zr = (int) (z.getY() / GameConstant.TILE_SIZE);
+                int zc = (int) (z.getX() / GameConstant.TILE_SIZE);
+
+                if (dist(row, col, zr, zc) < 2) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            // Valid spawn
             zombies.add(new Zombie(row, col, maze));
         }
 
         return zombies;
     }
 
+    // COLLECTIBLES ALWAYS RANDOM
     public List<Collectible> spawnCollectibles(List<Zombie> zombies) {
         List<Collectible> collectibles = new ArrayList<>();
 
@@ -42,26 +92,6 @@ public class Spawner {
 
             if (!maze.isWalkable(row, col)) continue;
 
-            boolean tooClose = false;
-
-            for (Zombie z : zombies) {
-                if (distance(row, col, z) < 3) {
-                    tooClose = true;
-                    break;
-                }
-            }
-            if (tooClose) continue;
-
-            for (Collectible c : collectibles) {
-                int cRow = (int) (c.getY() / GameConstant.TILE_SIZE);
-                int cCol = (int) (c.getX() / GameConstant.TILE_SIZE);
-                if (Math.abs(cRow - row) < 2 && Math.abs(cCol - col) < 2) {
-                    tooClose = true;
-                    break;
-                }
-            }
-            if (tooClose) continue;
-
             double x = col * GameConstant.TILE_SIZE +
                        (GameConstant.TILE_SIZE - Collectible.SIZE) / 2.0;
 
@@ -72,17 +102,5 @@ public class Spawner {
         }
 
         return collectibles;
-    }
-
-    private double distance(int row, int col, Player p) {
-        int pRow = (int) (p.getY() / GameConstant.TILE_SIZE);
-        int pCol = (int) (p.getX() / GameConstant.TILE_SIZE);
-        return Math.hypot(row - pRow, col - pCol);
-    }
-
-    private double distance(int row, int col, Zombie z) {
-        int zRow = (int) (z.getY() / GameConstant.TILE_SIZE);
-        int zCol = (int) (z.getX() / GameConstant.TILE_SIZE);
-        return Math.hypot(row - zRow, col - zCol);
     }
 }

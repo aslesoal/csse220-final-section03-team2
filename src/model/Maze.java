@@ -1,72 +1,82 @@
 package model;
 
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-/**
- * Represents the maze grid and provides tile-level queries.
- */
 public class Maze {
-	
+
     private Tile[][] tiles;
     private int rows;
     private int cols;
 
-    public Maze(TileType[][] layout) {
-        rows = layout.length;
-        cols = layout[0].length;
-        tiles = new Tile[rows][cols];
+    // Spawn points
+    private Point playerSpawn = null;
+    private final ArrayList<Point> zombieSpawns = new ArrayList<>();
 
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                tiles[r][c] = new Tile(layout[r][c]);
-            }
-        }
-    }
-    
+    public Point getPlayerSpawn() { return playerSpawn; }
+    public ArrayList<Point> getZombieSpawns() { return zombieSpawns; }
+
     public Maze(File inputFile) {
-    	try {
-    		Scanner fileReader = new Scanner(inputFile);
-    		ArrayList<char[]> fileContents = new ArrayList<>(); 
-    		
-    		while (fileReader.hasNext()) {
-    			fileContents.add(fileReader.nextLine().toCharArray());
-    		}
-    		fileReader.close();
-    		System.out.println("Loaded level from:         " + inputFile.toURI());
-    		
-    		rows = fileContents.size();
-    		cols = fileContents.get(0).length;
-    		tiles = new Tile[rows][cols];
-    		
-    		for (int r = 0; r < rows; r++) {
-    			for (int c = 0; c < cols; c++) {
-    				tiles[r][c] = switch (fileContents.get(r)[c]) {
-    					case '█' -> new Tile(TileType.WALL);
-    					case ' ' -> new Tile(TileType.FLOOR);
-    					case 'X' -> new Tile(TileType.EXIT);
-    					default  -> new Tile(TileType.FLOOR);
-    				};
-    			}
-    		}
-    		
-    	} catch (FileNotFoundException e) {
-    		System.err.println(e);
-    		System.err.println("Loading default maze...");
-    		
-    		rows = 15;
-    		cols = 15;
-    		tiles = new Tile[rows][cols];
-    		
-    		for (int r = 0; r < rows; r++) {
+        try {
+            Scanner fileReader = new Scanner(inputFile);
+            ArrayList<char[]> fileContents = new ArrayList<>();
+
+            while (fileReader.hasNext()) {
+                fileContents.add(fileReader.nextLine().toCharArray());
+            }
+            fileReader.close();
+
+            rows = fileContents.size();
+            cols = fileContents.get(0).length;
+            tiles = new Tile[rows][cols];
+
+            for (int r = 0; r < rows; r++) {
+                for (int c = 0; c < cols; c++) {
+
+                    char ch = fileContents.get(r)[c];
+
+                    switch (ch) {
+
+                        case '█' -> tiles[r][c] = new Tile(TileType.WALL);
+                        case ' ' -> tiles[r][c] = new Tile(TileType.FLOOR);
+
+                        // EXIT (uppercase or lowercase)
+                        case 'X', 'x' -> tiles[r][c] = new Tile(TileType.EXIT);
+
+                        // PLAYER SPAWN (uppercase or lowercase)
+                        case 'P', 'p' -> {
+                            playerSpawn = new Point(r, c);
+                            tiles[r][c] = new Tile(TileType.FLOOR);
+                        }
+
+                        // ZOMBIE SPAWN (uppercase or lowercase)
+                        case 'Z', 'z' -> {
+                            zombieSpawns.add(new Point(r, c));
+                            tiles[r][c] = new Tile(TileType.FLOOR);
+                        }
+
+                        default -> tiles[r][c] = new Tile(TileType.FLOOR);
+                    }
+                }
+            }
+
+        } catch (FileNotFoundException e) {
+            System.err.println("Level load failed, using fallback.");
+
+            rows = 15;
+            cols = 15;
+            tiles = new Tile[rows][cols];
+
+            for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     tiles[r][c] = new Tile(MazeLayout.MAZE[r][c]);
                 }
             }
-    	}
+        }
     }
 
     public int getRows() { return rows; }

@@ -1,8 +1,5 @@
 package model;
 
-/**
- * Manages the current game mode and fade values for overlays.
- */
 public class GameStateManager {
 
     private GameMode mode = GameMode.TITLE;
@@ -12,13 +9,11 @@ public class GameStateManager {
     private float winAlpha = 0f;
     private float gameOverAlpha = 0f;
 
-    public GameMode getMode() {
-        return mode;
-    }
+    private boolean newHighScore = false;
+    private float highScoreAlpha = 0f;
 
-    public void setMode(GameMode mode) {
-        this.mode = mode;
-    }
+    public GameMode getMode() { return mode; }
+    public void setMode(GameMode mode) { this.mode = mode; }
 
     public boolean isTitle()    { return mode == GameMode.TITLE; }
     public boolean isPlaying()  { return mode == GameMode.PLAYING; }
@@ -31,10 +26,16 @@ public class GameStateManager {
     public float getWinAlpha()      { return winAlpha; }
     public float getGameOverAlpha() { return gameOverAlpha; }
 
-    /**
-     * Called once per frame to update fade values.
-     */
+    public boolean isNewHighScore() { return newHighScore; }
+    public float getHighScoreAlpha() { return highScoreAlpha; }
+
+    public void setNewHighScore(boolean value) {
+        newHighScore = value;
+        highScoreAlpha = 0f;
+    }
+
     public void updateFades() {
+
         if (!isTitle() && titleAlpha > 0f) {
             titleAlpha -= 0.02f;
             if (titleAlpha < 0f) titleAlpha = 0f;
@@ -66,6 +67,13 @@ public class GameStateManager {
         } else {
             gameOverAlpha = 0f;
         }
+
+        if (newHighScore) {
+            if (highScoreAlpha < 1f) {
+                highScoreAlpha += 0.02f;
+                if (highScoreAlpha > 1f) highScoreAlpha = 1f;
+            }
+        }
     }
 
     public void reset() {
@@ -74,5 +82,8 @@ public class GameStateManager {
         pauseAlpha = 0f;
         winAlpha = 0f;
         gameOverAlpha = 0f;
+
+        newHighScore = false;
+        highScoreAlpha = 0f;
     }
 }

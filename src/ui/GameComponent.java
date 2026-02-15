@@ -4,6 +4,7 @@ import model.*;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import javax.swing.JOptionPane;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -26,6 +27,11 @@ public class GameComponent extends JPanel implements KeyListener {
     private boolean up, down, left, right;
     private boolean exitUnlocked = false;
 
+    private GameMode previousMode = GameMode.TITLE;
+
+    private boolean pendingNamePrompt = false;
+    private long winFadeCompleteTime = 0L;
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
@@ -42,12 +48,14 @@ public class GameComponent extends JPanel implements KeyListener {
     }
 
     private void resetGameState() {
-        player = new Player(1, 1, maze);
+        player = spawner.spawnPlayer();
         zombies = spawner.spawnZombies(player);
         collectibles = spawner.spawnCollectibles(zombies);
         exitUnlocked = false;
 
         up = down = left = right = false;
+        pendingNamePrompt = false;
+        winFadeCompleteTime = 0L;
     }
 
     private void fullRestart() {
@@ -63,7 +71,31 @@ public class GameComponent extends JPanel implements KeyListener {
             updateGameLogic();
         }
 
+        handleDelayedNamePrompt();
+
         repaint();
+    }
+
+    private void handleDelayedNamePrompt() {
+        if (!pendingNamePrompt) return;
+        if (!gsm.isWin()) {
+            pendingNamePrompt = false;
+            winFadeCompleteTime = 0L;
+            return;
+        }
+
+        if (gsm.getWinAlpha() >= 1f && winFadeCompleteTime == 0L) {
+            winFadeCompleteTime = System.currentTimeMillis();
+        }
+
+        if (winFadeCompleteTime > 0L) {
+            long elapsed = System.currentTimeMillis() - winFadeCompleteTime;
+            if (elapsed >= 500) {
+                showNamePromptAndSaveScore();
+                pendingNamePrompt = false;
+                winFadeCompleteTime = 0L;
+            }
+        }
     }
 
     private void updateGameLogic() {
@@ -101,7 +133,7 @@ public class GameComponent extends JPanel implements KeyListener {
                     camera.triggerShake();
 
                     if (player.isDead()) {
-                        gsm.setMode(GameMode.GAME_OVER);
+                        handleGameEnd(GameMode.GAME_OVER);
                         return;
                     }
                 }
@@ -117,7 +149,6 @@ public class GameComponent extends JPanel implements KeyListener {
                 int earned = c.collect();
                 player.addScore(earned);
 
-                // NEW: Reset all remaining collectibles to 1000
                 for (Collectible other : collectibles) {
                     if (!other.isCollected()) {
                         other.resetValue();
@@ -137,7 +168,28 @@ public class GameComponent extends JPanel implements KeyListener {
         int col = (int) ((player.getX() + Player.SIZE / 2) / tileSize);
 
         if (exitUnlocked && maze.isExit(row, col)) {
-            gsm.setMode(GameMode.WIN);
+            handleGameEnd(GameMode.WIN);
+        }
+    }
+
+    private void handleGameEnd(GameMode mode) {
+        gsm.setMode(mode);
+
+        boolean newHigh = ScoreManager.isNewHighScore(player.getScore());
+        gsm.setNewHighScore(newHigh);
+
+        if (mode == GameMode.WIN) {
+            pendingNamePrompt = true;
+            winFadeCompleteTime = 0L;
+        } else {
+            showNamePromptAndSaveScore();
+        }
+    }
+
+    private void showNamePromptAndSaveScore() {
+        String name = JOptionPane.showInputDialog(this, "Enter your name:");
+        if (name != null && !name.isBlank()) {
+            ScoreManager.saveScore(name, player.getScore());
         }
     }
 
@@ -178,6 +230,14 @@ public class GameComponent extends JPanel implements KeyListener {
             if (code == KeyEvent.VK_ENTER) {
                 gsm.setMode(GameMode.PLAYING);
             }
+            return;
+        }
+
+        if (code == KeyEvent.VK_L) {
+            previousMode = gsm.getMode();
+            gsm.setMode(GameMode.PAUSED);
+            LeaderboardPanel.showLeaderboard(this);
+            gsm.setMode(previousMode);
             return;
         }
 
