@@ -1,9 +1,12 @@
----------------------------------------------------------------------
-• Avoid zombies — they cost you lives
+-------------------------------------------------------------------------------------------
 • Collect all gems to unlock the exit
-• Freeze (15%): Zombies stop for 3 seconds
-• Double Points (15%): Score doubled for 5 seconds
+• Avoid zombies — each hit costs you a life
+• Every collectible has a 15% chance to activate FREEZE:
+    - All zombies stop moving for 3 seconds
+• Every collectible has a 15% chance to activate DOUBLE POINTS:
+    - All collectible values are doubled for 5 seconds
+• Collectibles lose value over time, so move quickly
 • Night Mode (N): Toggle visibility
-• Restart (R): Restart game during play
+• Restart (R): Restart the game during play
 • Leaderboard (L): View high scores
 • Pause (P): Pause the game

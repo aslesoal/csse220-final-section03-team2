@@ -247,16 +247,16 @@ public class Renderer {
             // Title centered
             g2.setFont(new Font("Arial", Font.BOLD, 42));
             g2.setColor(Color.WHITE);
-            drawCenteredString(g2, "GAME RULES", 120, width);
+            drawCenteredString(g2, "GAME RULES", 80, width);
 
-            // Left‑aligned rules text
-            g2.setFont(new Font("Arial", Font.PLAIN, 24));
-            int y = 180;
+            // Left aligned rules text
+            g2.setFont(new Font("Arial", Font.PLAIN, 18));
+            int y = 100;
             int leftX = 20;
 
             for (String line : rulesText) {
                 g2.drawString(line, leftX, y);
-                y += 32;
+                y += 28;
             }
 
             // Footer centered
