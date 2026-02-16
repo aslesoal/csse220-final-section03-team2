@@ -6,5 +6,6 @@ public enum GameMode {
     PAUSED,
     TRANSITION,
     WIN,
-    GAME_OVER
+    GAME_OVER,
+    RULES
 }

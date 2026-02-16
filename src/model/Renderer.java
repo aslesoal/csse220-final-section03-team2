@@ -15,6 +15,13 @@ public class Renderer {
     private boolean doublePointsActive = false;
     private long doublePointsStartTime = 0L;
 
+    // RULES TEXT (loaded by GameComponent)
+    private List<String> rulesText;
+
+    public void setRulesText(List<String> lines) {
+        this.rulesText = lines;
+    }
+
     public void activateFreeze() {
         freezeActive = true;
         freezeStartTime = System.currentTimeMillis();
@@ -40,6 +47,9 @@ public class Renderer {
         g2.drawString(text, x, y);
     }
 
+    // ---------------------------------------------------------
+    // WORLD RENDERING
+    // ---------------------------------------------------------
     public void renderWorld(Graphics2D g2, Maze maze, Player player,
                             List<Zombie> zombies,
                             List<Collectible> collectibles,
@@ -98,7 +108,7 @@ public class Renderer {
     }
 
     // ---------------------------------------------------------
-    // FINAL NIGHT MODE (correct radius, darkness, centering)
+    // NIGHT MODE
     // ---------------------------------------------------------
     public void renderNightMode(Graphics2D g2, Player player, Maze maze, int width, int height) {
 
@@ -126,7 +136,9 @@ public class Renderer {
         g2.drawImage(darkness, 0, 0, null);
     }
 
-    // HUD (two rows)
+    // ---------------------------------------------------------
+    // HUD
+    // ---------------------------------------------------------
     public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
 
         g2.setColor(new Color(0, 0, 0, 180));
@@ -135,7 +147,7 @@ public class Renderer {
         g2.setColor(Color.WHITE);
 
         g2.setFont(new Font("Arial", Font.BOLD, 18));
-        g2.drawString("R: Restart   P: Pause   L: Leaderboard   N: Night Mode", 10, 22);
+        g2.drawString("R: Restart   P: Pause   L: Leaderboard   N: Night Mode   H: Rules", 10, 22);
 
         g2.setFont(new Font("Arial", Font.BOLD, 20));
         g2.drawString("Lives: " + player.getLives(), 10, 50);
@@ -158,7 +170,9 @@ public class Renderer {
         }
     }
 
-    // Freeze border (screen-space, on top)
+    // ---------------------------------------------------------
+    // FREEZE BORDER
+    // ---------------------------------------------------------
     public void renderFreezeBorder(Graphics2D g2, int width, int height) {
         if (!freezeActive) return;
 
@@ -180,7 +194,9 @@ public class Renderer {
         g2.fillRect(width - t, 0, t, height);
     }
 
-    // Double Points border (gold)
+    // ---------------------------------------------------------
+    // DOUBLE POINTS BORDER
+    // ---------------------------------------------------------
     public void renderDoublePointsBorder(Graphics2D g2, int width, int height) {
         if (!doublePointsActive) return;
 
@@ -202,8 +218,12 @@ public class Renderer {
         g2.fillRect(width - t, 0, t, height);
     }
 
+    // ---------------------------------------------------------
+    // OVERLAYS (Title, Pause, Win, Game Over, Rules)
+    // ---------------------------------------------------------
     public void renderOverlays(Graphics2D g2, GameStateManager gsm, Player player, int width, int height) {
 
+        // TITLE SCREEN
         if (gsm.isTitle() || gsm.getTitleAlpha() > 0f) {
             float a = gsm.getTitleAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.7f));
@@ -215,11 +235,36 @@ public class Renderer {
 
             g2.setFont(new Font("Arial", Font.BOLD, 24));
             drawCenteredString(g2, "Press ENTER to Start", 310, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 20));
-            drawCenteredString(g2, "Press N to Toggle Night Mode", 360, width);
+            drawCenteredString(g2, "Press N to Toggle Night Mode", 350, width);
+            drawCenteredString(g2, "Press H for Rules", 390, width);
         }
 
+        // RULES SCREEN
+        if (gsm.isRules()) {
+            g2.setColor(new Color(0f, 0f, 0f, 0.75f));
+            g2.fillRect(0, 0, width, height);
+
+            // Title centered
+            g2.setFont(new Font("Arial", Font.BOLD, 42));
+            g2.setColor(Color.WHITE);
+            drawCenteredString(g2, "GAME RULES", 120, width);
+
+            // Left‑aligned rules text
+            g2.setFont(new Font("Arial", Font.PLAIN, 24));
+            int y = 180;
+            int leftX = 20;
+
+            for (String line : rulesText) {
+                g2.drawString(line, leftX, y);
+                y += 32;
+            }
+
+            // Footer centered
+            g2.setFont(new Font("Arial", Font.BOLD, 22));
+            drawCenteredString(g2, "Press H to return", height - 80, width);
+        }
+
+        // PAUSE
         if (gsm.isPaused()) {
             float a = gsm.getPauseAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
@@ -233,6 +278,7 @@ public class Renderer {
             drawCenteredString(g2, "Press P to Resume", 310, width);
         }
 
+        // WIN
         if (gsm.isWin()) {
             float a = gsm.getWinAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
@@ -249,6 +295,7 @@ public class Renderer {
             drawCenteredString(g2, "Press L to view Leaderboard", 350, width);
         }
 
+        // GAME OVER
         if (gsm.isGameOver()) {
             float a = gsm.getGameOverAlpha();
             g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));

@@ -10,6 +10,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.List;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
 
 public class GameComponent extends JPanel implements KeyListener {
 
@@ -26,8 +29,6 @@ public class GameComponent extends JPanel implements KeyListener {
 
     private boolean up, down, left, right;
     private boolean exitUnlocked = false;
-
-    private GameMode previousMode = GameMode.TITLE;
 
     private boolean pendingWinPrompt = false;
     private boolean pendingGameOverPrompt = false;
@@ -55,16 +56,30 @@ public class GameComponent extends JPanel implements KeyListener {
     private boolean doublePointsActive = false;
     private long doublePointsStartTime = 0L;
 
+    // RULES TEXT
+    private List<String> rulesLines = new ArrayList<>();
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
 
         setPreferredSize(new Dimension(650, 650));
 
+        loadRulesFile();
         loadLevel(currentLevel);
 
         Timer timer = new Timer(16, e -> gameLoop());
         timer.start();
+    }
+
+    private void loadRulesFile() {
+        try {
+            File file = new File("bin/levels/rules.txt");
+            rulesLines = Files.readAllLines(file.toPath());
+        } catch (IOException e) {
+            rulesLines = List.of("RULES FILE NOT FOUND");
+        }
+        renderer.setRulesText(rulesLines);
     }
 
     private void loadLevel(int level) {
@@ -425,6 +440,7 @@ public class GameComponent extends JPanel implements KeyListener {
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
 
+        // TITLE SCREEN
         if (gsm.isTitle()) {
             if (code == KeyEvent.VK_ENTER) {
                 gsm.setMode(GameMode.PLAYING);
@@ -432,22 +448,36 @@ public class GameComponent extends JPanel implements KeyListener {
             if (code == KeyEvent.VK_N) {
                 nightMode = !nightMode;
             }
+            if (code == KeyEvent.VK_H) {
+                gsm.setMode(GameMode.RULES);
+            }
             return;
         }
 
-        if (code == KeyEvent.VK_N) {
-            nightMode = !nightMode;
+        // RULES SCREEN
+        if (gsm.isRules()) {
+            if (code == KeyEvent.VK_H) {
+                fullRestart();              // reset EVERYTHING
+                gsm.setMode(GameMode.TITLE); // return to fresh boot state
+            }
             return;
         }
 
+        // GLOBAL RULES ACCESS (except during gameplay)
+        if (!gsm.isPlaying() && code == KeyEvent.VK_H) {
+            gsm.setMode(GameMode.RULES);
+            return;
+        }
+
+        // LEADERBOARD ACCESS
         if (code == KeyEvent.VK_L) {
-            previousMode = gsm.getMode();
-            gsm.setMode(GameMode.PAUSED);
+            GameMode returnMode = gsm.getMode();   // store EXACT current mode
             LeaderboardPanel.showLeaderboard(this);
-            gsm.setMode(previousMode);
+            gsm.setMode(returnMode);               // restore it exactly
             return;
         }
 
+        // WIN / GAME OVER
         if (gsm.isWin() || gsm.isGameOver()) {
             if (code == KeyEvent.VK_R) {
                 fullRestart();
@@ -455,12 +485,14 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
+        // PAUSE
         if (code == KeyEvent.VK_P) {
             if (gsm.isPlaying()) gsm.setMode(GameMode.PAUSED);
             else if (gsm.isPaused()) gsm.setMode(GameMode.PLAYING);
             return;
         }
 
+        // GAMEPLAY CONTROLS
         if (!gsm.isPlaying()) return;
 
         if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) up = true;

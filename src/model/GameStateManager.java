@@ -20,6 +20,8 @@ public class GameStateManager {
     public boolean isPaused()   { return mode == GameMode.PAUSED; }
     public boolean isWin()      { return mode == GameMode.WIN; }
     public boolean isGameOver() { return mode == GameMode.GAME_OVER; }
+    public boolean isRules() { return mode == GameMode.RULES; }
+
 
     public float getTitleAlpha()    { return titleAlpha; }
     public float getPauseAlpha()    { return pauseAlpha; }

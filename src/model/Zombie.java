@@ -32,7 +32,6 @@ public class Zombie {
 
         try {
             sprite = ImageIO.read(Zombie.class.getResource(GameConstant.ZOMBIE_SPRITE));
-            System.out.println("Loaded zombie sprite from: " + Zombie.class.getResource(GameConstant.ZOMBIE_SPRITE));
         } catch (Exception e) {
             sprite = null;
             System.err.println("Zombie sprite not found: " + e);
