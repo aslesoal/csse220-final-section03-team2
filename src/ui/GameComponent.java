@@ -29,8 +29,20 @@ public class GameComponent extends JPanel implements KeyListener {
 
     private GameMode previousMode = GameMode.TITLE;
 
-    private boolean pendingNamePrompt = false;
+    private boolean pendingWinPrompt = false;
+    private boolean pendingGameOverPrompt = false;
+
     private long winFadeCompleteTime = 0L;
+    private long gameOverFadeCompleteTime = 0L;
+
+    private int currentLevel = 1;
+    private final int maxLevel = 2;
+
+    private int carryoverScore = 0;
+
+    private boolean inTransition = false;
+    private long transitionStartTime = 0L;
+    private final long transitionDuration = 3000;
 
     public GameComponent() {
         setFocusable(true);
@@ -38,13 +50,24 @@ public class GameComponent extends JPanel implements KeyListener {
 
         setPreferredSize(new Dimension(650, 650));
 
-        maze = new Maze(new File("bin/levels/level1.txt"));
-        spawner = new Spawner(maze);
-
-        resetGameState();
+        loadLevel(currentLevel);
 
         Timer timer = new Timer(16, e -> gameLoop());
         timer.start();
+    }
+
+    private void loadLevel(int level) {
+        String path = "bin/levels/level" + level + ".txt";
+        maze = new Maze(new File(path));
+        spawner = new Spawner(maze);
+
+        if (level == 1) {
+            spawner.setZombieCount(8);
+        } else if (level == 2) {
+            spawner.setZombieCount(10);
+        }
+
+        resetGameState();
     }
 
     private void resetGameState() {
@@ -53,47 +76,96 @@ public class GameComponent extends JPanel implements KeyListener {
         collectibles = spawner.spawnCollectibles(zombies);
         exitUnlocked = false;
 
+        player.addScore(carryoverScore);
+
         up = down = left = right = false;
-        pendingNamePrompt = false;
+
+        pendingWinPrompt = false;
+        pendingGameOverPrompt = false;
+
         winFadeCompleteTime = 0L;
+        gameOverFadeCompleteTime = 0L;
     }
 
     private void fullRestart() {
+        currentLevel = 1;
+        carryoverScore = 0;
         gsm.reset();
-        resetGameState();
+        inTransition = false;
+        transitionStartTime = 0L;
+        loadLevel(currentLevel);
     }
 
     private void gameLoop() {
         gsm.updateFades();
         camera.update();
 
+        if (gsm.getMode() == GameMode.TRANSITION) {
+            long elapsed = System.currentTimeMillis() - transitionStartTime;
+
+            if (elapsed >= transitionDuration) {
+                inTransition = false;
+                gsm.setMode(GameMode.PLAYING);
+            }
+
+            repaint();
+            return;
+        }
+
         if (gsm.isPlaying()) {
             updateGameLogic();
         }
 
-        handleDelayedNamePrompt();
+        handleDelayedPrompts();
 
         repaint();
     }
 
-    private void handleDelayedNamePrompt() {
-        if (!pendingNamePrompt) return;
-        if (!gsm.isWin()) {
-            pendingNamePrompt = false;
-            winFadeCompleteTime = 0L;
-            return;
-        }
+    private void handleDelayedPrompts() {
 
-        if (gsm.getWinAlpha() >= 1f && winFadeCompleteTime == 0L) {
-            winFadeCompleteTime = System.currentTimeMillis();
-        }
+        // WIN delayed prompt
+        if (pendingWinPrompt) {
 
-        if (winFadeCompleteTime > 0L) {
-            long elapsed = System.currentTimeMillis() - winFadeCompleteTime;
-            if (elapsed >= 500) {
-                showNamePromptAndSaveScore();
-                pendingNamePrompt = false;
+            if (!gsm.isWin()) {
+                pendingWinPrompt = false;
                 winFadeCompleteTime = 0L;
+                return;
+            }
+
+            if (gsm.getWinAlpha() >= 1f && winFadeCompleteTime == 0L) {
+                winFadeCompleteTime = System.currentTimeMillis();
+            }
+
+            if (winFadeCompleteTime > 0L) {
+                long elapsed = System.currentTimeMillis() - winFadeCompleteTime;
+                if (elapsed >= 500) {
+                    showNamePromptAndSaveScore();
+                    pendingWinPrompt = false;
+                    winFadeCompleteTime = 0L;
+                }
+            }
+        }
+
+        // GAME OVER delayed prompt
+        if (pendingGameOverPrompt) {
+
+            if (!gsm.isGameOver()) {
+                pendingGameOverPrompt = false;
+                gameOverFadeCompleteTime = 0L;
+                return;
+            }
+
+            if (gsm.getGameOverAlpha() >= 1f && gameOverFadeCompleteTime == 0L) {
+                gameOverFadeCompleteTime = System.currentTimeMillis();
+            }
+
+            if (gameOverFadeCompleteTime > 0L) {
+                long elapsed = System.currentTimeMillis() - gameOverFadeCompleteTime;
+                if (elapsed >= 500) {
+                    showNamePromptAndSaveScore();
+                    pendingGameOverPrompt = false;
+                    gameOverFadeCompleteTime = 0L;
+                }
             }
         }
     }
@@ -168,21 +240,37 @@ public class GameComponent extends JPanel implements KeyListener {
         int col = (int) ((player.getX() + Player.SIZE / 2) / tileSize);
 
         if (exitUnlocked && maze.isExit(row, col)) {
+
+            if (currentLevel < maxLevel) {
+
+                carryoverScore = player.getScore();
+
+                currentLevel++;
+                loadLevel(currentLevel);
+
+                inTransition = true;
+                transitionStartTime = System.currentTimeMillis();
+                gsm.setMode(GameMode.TRANSITION);
+                return;
+            }
+
             handleGameEnd(GameMode.WIN);
         }
     }
 
     private void handleGameEnd(GameMode mode) {
+        inTransition = false;
         gsm.setMode(mode);
 
         boolean newHigh = ScoreManager.isNewHighScore(player.getScore());
         gsm.setNewHighScore(newHigh);
 
         if (mode == GameMode.WIN) {
-            pendingNamePrompt = true;
+            pendingWinPrompt = true;
             winFadeCompleteTime = 0L;
         } else {
-            showNamePromptAndSaveScore();
+            pendingGameOverPrompt = true;
+            gameOverFadeCompleteTime = 0L;
         }
     }
 
@@ -218,6 +306,34 @@ public class GameComponent extends JPanel implements KeyListener {
         renderer.renderHUD(g2, player, dangerDetector.isInDanger(), width, height);
         renderer.renderFlash(g2, player, width, height);
         renderer.renderOverlays(g2, gsm, player, width, height);
+
+        // transition overlay (dark → light)
+        if (inTransition && gsm.getMode() == GameMode.TRANSITION) {
+
+            long elapsed = System.currentTimeMillis() - transitionStartTime;
+            float progress = Math.min(1f, elapsed / (float) transitionDuration);
+
+            int alpha = (int)((1f - progress) * 180);
+
+            g2.setColor(new Color(0, 0, 0, alpha));
+            g2.fillRect(0, 0, width, height);
+
+            int secondsLeft = 3 - (int) (elapsed / 1000);
+            if (secondsLeft < 1) secondsLeft = 1;
+
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("Arial", Font.BOLD, 72));
+            String text = String.valueOf(secondsLeft);
+            FontMetrics fm = g2.getFontMetrics();
+            int tw = fm.stringWidth(text);
+            g2.drawString(text, (width - tw) / 2, height / 2);
+
+            g2.setFont(new Font("Arial", Font.PLAIN, 32));
+            String lvl = "LEVEL " + currentLevel;
+            fm = g2.getFontMetrics();
+            int lw = fm.stringWidth(lvl);
+            g2.drawString(lvl, (width - lw) / 2, height / 2 - 80);
+        }
 
         g2.dispose();
     }

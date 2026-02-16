@@ -10,8 +10,16 @@ public class Spawner {
     private final Maze maze;
     private final Random random = new Random();
 
+    // ⭐ NEW: level-specific zombie count (defaults to constant)
+    private int zombieCount = GameConstant.ZOMBIE_COUNT;
+
     public Spawner(Maze maze) {
         this.maze = maze;
+    }
+
+    // ⭐ NEW: allow GameComponent to override zombie count per level
+    public void setZombieCount(int count) {
+        this.zombieCount = count;
     }
 
     // PLAYER SPAWN
@@ -43,7 +51,7 @@ public class Spawner {
         }
 
         // fallback: random spawning with spacing rules
-        int count = GameConstant.ZOMBIE_COUNT;
+        int count = zombieCount; // ⭐ USE LEVEL-SPECIFIC COUNT
 
         // Player tile position
         int pr = (int) ((player.getY() + Player.SIZE / 2) / GameConstant.TILE_SIZE);

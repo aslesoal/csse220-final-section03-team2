@@ -1,12 +1,10 @@
 package model;
 
-/**
- * High-level game states.
- */
 public enum GameMode {
     TITLE,
     PLAYING,
     PAUSED,
+    TRANSITION,
     WIN,
     GAME_OVER
 }
