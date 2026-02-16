@@ -2,6 +2,7 @@ package model;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import java.util.List;
 
 public class Renderer {
@@ -30,28 +31,28 @@ public class Renderer {
         for (Collectible c : collectibles) {
             if (!c.isCollected()) {
                 g2.fillOval((int) c.getX(), (int) c.getY(),
-                            Collectible.SIZE, Collectible.SIZE);
+                        Collectible.SIZE, Collectible.SIZE);
             }
         }
 
         for (Zombie z : zombies) {
             if (z.getSprite() != null) {
                 drawRotatedSprite(g2, z.getSprite(), z.getX(), z.getY(),
-                                  Zombie.SIZE, Zombie.SIZE, z.getFacingAngle());
+                        Zombie.SIZE, Zombie.SIZE, z.getFacingAngle());
             } else {
                 g2.setColor(Color.RED);
                 g2.fillOval((int) z.getX(), (int) z.getY(),
-                            Zombie.SIZE, Zombie.SIZE);
+                        Zombie.SIZE, Zombie.SIZE);
             }
         }
 
         if (player.getSprite() != null) {
             drawRotatedSprite(g2, player.getSprite(), player.getX(), player.getY(),
-                              Player.SIZE, Player.SIZE, player.getFacingAngle());
+                    Player.SIZE, Player.SIZE, player.getFacingAngle());
         } else {
             g2.setColor(Color.BLUE);
             g2.fillOval((int) player.getX(), (int) player.getY(),
-                        Player.SIZE, Player.SIZE);
+                    Player.SIZE, Player.SIZE);
         }
 
         g2.translate(-offsetX, -offsetY);
@@ -71,8 +72,40 @@ public class Renderer {
     }
 
     // ---------------------------------------------------------
-    // UPDATED HUD (two lines)
+    // FINAL NIGHT MODE (correct radius, darkness, centering)
     // ---------------------------------------------------------
+    public void renderNightMode(Graphics2D g2, Player player, Maze maze, int width, int height) {
+
+        BufferedImage darkness = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D gDark = darkness.createGraphics();
+
+        // DARKER overlay
+        gDark.setColor(new Color(0, 0, 0, 240)); // 240 = very dark
+        gDark.fillRect(0, 0, width, height);
+
+        // Punch a hole
+        gDark.setComposite(AlphaComposite.DstOut);
+
+        // Smaller radius
+        int radius = 110;
+
+        // Maze centering offsets
+        int mazeSize = GameConstant.TILE_SIZE * maze.getRows();
+        int offsetX = (width - mazeSize) / 2;
+        int offsetY = (height - mazeSize) / 2;
+
+        // Player center WITH offsets
+        int px = (int) player.getX() + Player.SIZE / 2 + offsetX;
+        int py = (int) player.getY() + Player.SIZE / 2 + offsetY;
+
+        gDark.fillOval(px - radius, py - radius, radius * 2, radius * 2);
+
+        gDark.dispose();
+
+        g2.drawImage(darkness, 0, 0, null);
+    }
+
+    // HUD (two rows)
     public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
 
         g2.setColor(new Color(0, 0, 0, 180));
@@ -80,11 +113,9 @@ public class Renderer {
 
         g2.setColor(Color.WHITE);
 
-        // Line 1 — instructions
         g2.setFont(new Font("Arial", Font.BOLD, 18));
-        g2.drawString("R: Restart   P: Pause   L: Leaderboard", 10, 22);
+        g2.drawString("R: Restart   P: Pause   L: Leaderboard   N: Night Mode", 10, 22);
 
-        // Line 2 — lives + score
         g2.setFont(new Font("Arial", Font.BOLD, 20));
         g2.drawString("Lives: " + player.getLives(), 10, 50);
         g2.drawString("Score: " + player.getScore(), 150, 50);
@@ -119,6 +150,9 @@ public class Renderer {
 
             g2.setFont(new Font("Arial", Font.BOLD, 24));
             drawCenteredString(g2, "Press ENTER to Start", 310, width);
+
+            g2.setFont(new Font("Arial", Font.BOLD, 20));
+            drawCenteredString(g2, "Press N to Toggle Night Mode", 360, width);
         }
 
         if (gsm.isPaused()) {

@@ -44,6 +44,9 @@ public class GameComponent extends JPanel implements KeyListener {
     private long transitionStartTime = 0L;
     private final long transitionDuration = 3000;
 
+    // NIGHT MODE
+    private boolean nightMode = false;
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
@@ -194,7 +197,7 @@ public class GameComponent extends JPanel implements KeyListener {
             if (z.isInCollisionCooldown()) continue;
 
             if (overlap(player.getX(), player.getY(), Player.SIZE,
-                        z.getX(), z.getY(), Zombie.SIZE)) {
+                    z.getX(), z.getY(), Zombie.SIZE)) {
 
                 z.triggerCollisionCooldown();
 
@@ -215,8 +218,8 @@ public class GameComponent extends JPanel implements KeyListener {
         int collectedCount = 0;
         for (Collectible c : collectibles) {
             if (!c.isCollected() &&
-                overlap(player.getX(), player.getY(), Player.SIZE,
-                        c.getX(), c.getY(), Collectible.SIZE)) {
+                    overlap(player.getX(), player.getY(), Player.SIZE,
+                            c.getX(), c.getY(), Collectible.SIZE)) {
 
                 int earned = c.collect();
                 player.addScore(earned);
@@ -284,9 +287,9 @@ public class GameComponent extends JPanel implements KeyListener {
     private boolean overlap(double x1, double y1, int size1,
                             double x2, double y2, int size2) {
         return x1 < x2 + size2 &&
-               x1 + size1 > x2 &&
-               y1 < y2 + size2 &&
-               y1 + size1 > y2;
+                x1 + size1 > x2 &&
+                y1 < y2 + size2 &&
+                y1 + size1 > y2;
     }
 
     @Override
@@ -299,15 +302,26 @@ public class GameComponent extends JPanel implements KeyListener {
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, width, height);
 
+        // WORLD
         camera.apply(g2);
         renderer.renderWorld(g2, maze, player, zombies, collectibles, width, height);
         camera.reset(g2);
 
+        // NIGHT MODE (correct call, uses maze for centering)
+        if (nightMode && gsm.isPlaying()) {
+            renderer.renderNightMode(g2, player, maze, width, height);
+        }
+
+        // HUD stays bright
         renderer.renderHUD(g2, player, dangerDetector.isInDanger(), width, height);
+
+        // Flash effect
         renderer.renderFlash(g2, player, width, height);
+
+        // Overlays (title, pause, win, game over)
         renderer.renderOverlays(g2, gsm, player, width, height);
 
-        // transition overlay (dark → light)
+        // Transition overlay
         if (inTransition && gsm.getMode() == GameMode.TRANSITION) {
 
             long elapsed = System.currentTimeMillis() - transitionStartTime;
@@ -338,6 +352,10 @@ public class GameComponent extends JPanel implements KeyListener {
         g2.dispose();
     }
 
+    // ---------------------------------------------------------
+    // KEY LISTENER METHODS
+    // ---------------------------------------------------------
+
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
@@ -346,6 +364,14 @@ public class GameComponent extends JPanel implements KeyListener {
             if (code == KeyEvent.VK_ENTER) {
                 gsm.setMode(GameMode.PLAYING);
             }
+            if (code == KeyEvent.VK_N) {
+                nightMode = !nightMode;
+            }
+            return;
+        }
+
+        if (code == KeyEvent.VK_N) {
+            nightMode = !nightMode;
             return;
         }
 
