@@ -7,6 +7,32 @@ import java.util.List;
 
 public class Renderer {
 
+    // Freeze border state
+    private long freezeStartTime = 0;
+    private boolean freezeActive = false;
+
+    // Double Points border state
+    private boolean doublePointsActive = false;
+    private long doublePointsStartTime = 0L;
+
+    public void activateFreeze() {
+        freezeActive = true;
+        freezeStartTime = System.currentTimeMillis();
+    }
+
+    public void deactivateFreeze() {
+        freezeActive = false;
+    }
+
+    public void activateDoublePoints() {
+        doublePointsActive = true;
+        doublePointsStartTime = System.currentTimeMillis();
+    }
+
+    public void deactivateDoublePoints() {
+        doublePointsActive = false;
+    }
+
     private void drawCenteredString(Graphics2D g2, String text, int y, int width) {
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(text);
@@ -79,22 +105,17 @@ public class Renderer {
         BufferedImage darkness = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D gDark = darkness.createGraphics();
 
-        // DARKER overlay
-        gDark.setColor(new Color(0, 0, 0, 240)); // 240 = very dark
+        gDark.setColor(new Color(0, 0, 0, 245));
         gDark.fillRect(0, 0, width, height);
 
-        // Punch a hole
         gDark.setComposite(AlphaComposite.DstOut);
 
-        // Smaller radius
-        int radius = 110;
+        int radius = 100;
 
-        // Maze centering offsets
         int mazeSize = GameConstant.TILE_SIZE * maze.getRows();
         int offsetX = (width - mazeSize) / 2;
         int offsetY = (height - mazeSize) / 2;
 
-        // Player center WITH offsets
         int px = (int) player.getX() + Player.SIZE / 2 + offsetX;
         int py = (int) player.getY() + Player.SIZE / 2 + offsetY;
 
@@ -135,6 +156,50 @@ public class Renderer {
             g2.setColor(new Color(1f, 0f, 0f, 0.35f));
             g2.fillRect(0, 0, width, height);
         }
+    }
+
+    // Freeze border (screen-space, on top)
+    public void renderFreezeBorder(Graphics2D g2, int width, int height) {
+        if (!freezeActive) return;
+
+        long elapsed = System.currentTimeMillis() - freezeStartTime;
+        if (elapsed > 3000) {
+            freezeActive = false;
+            return;
+        }
+
+        float pulse = (float) ((Math.sin(elapsed / 120.0) + 1) / 2);
+        int alpha = (int) (pulse * 120 + 80);
+
+        g2.setColor(new Color(100, 180, 255, alpha));
+        int t = 8;
+
+        g2.fillRect(0, 0, width, t);
+        g2.fillRect(0, height - t, width, t);
+        g2.fillRect(0, 0, t, height);
+        g2.fillRect(width - t, 0, t, height);
+    }
+
+    // Double Points border (gold)
+    public void renderDoublePointsBorder(Graphics2D g2, int width, int height) {
+        if (!doublePointsActive) return;
+
+        long elapsed = System.currentTimeMillis() - doublePointsStartTime;
+        if (elapsed > 5000) {
+            doublePointsActive = false;
+            return;
+        }
+
+        float pulse = (float) ((Math.sin(elapsed / 120.0) + 1) / 2);
+        int alpha = (int) (pulse * 120 + 80);
+
+        g2.setColor(new Color(255, 215, 0, alpha)); // gold
+        int t = 8;
+
+        g2.fillRect(0, 0, width, t);
+        g2.fillRect(0, height - t, width, t);
+        g2.fillRect(0, 0, t, height);
+        g2.fillRect(width - t, 0, t, height);
     }
 
     public void renderOverlays(Graphics2D g2, GameStateManager gsm, Player player, int width, int height) {

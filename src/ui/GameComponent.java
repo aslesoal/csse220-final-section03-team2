@@ -47,6 +47,14 @@ public class GameComponent extends JPanel implements KeyListener {
     // NIGHT MODE
     private boolean nightMode = false;
 
+    // FREEZE
+    private boolean freezeActive = false;
+    private long freezeStartTime = 0L;
+
+    // DOUBLE POINTS
+    private boolean doublePointsActive = false;
+    private long doublePointsStartTime = 0L;
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
@@ -88,6 +96,12 @@ public class GameComponent extends JPanel implements KeyListener {
 
         winFadeCompleteTime = 0L;
         gameOverFadeCompleteTime = 0L;
+
+        freezeActive = false;
+        freezeStartTime = 0L;
+
+        doublePointsActive = false;
+        doublePointsStartTime = 0L;
     }
 
     private void fullRestart() {
@@ -96,6 +110,13 @@ public class GameComponent extends JPanel implements KeyListener {
         gsm.reset();
         inTransition = false;
         transitionStartTime = 0L;
+
+        freezeActive = false;
+        freezeStartTime = 0L;
+
+        doublePointsActive = false;
+        doublePointsStartTime = 0L;
+
         loadLevel(currentLevel);
     }
 
@@ -180,11 +201,29 @@ public class GameComponent extends JPanel implements KeyListener {
         player.move(up, down, left, right);
 
         for (Zombie z : zombies) {
-            z.update();
+            if (!freezeActive) {
+                z.update();
+            }
         }
 
         for (Collectible c : collectibles) {
             c.updateValue();
+        }
+
+        // Freeze timer
+        if (freezeActive) {
+            if (System.currentTimeMillis() - freezeStartTime >= 3000) {
+                freezeActive = false;
+                renderer.deactivateFreeze();
+            }
+        }
+
+        // Double Points timer
+        if (doublePointsActive) {
+            if (System.currentTimeMillis() - doublePointsStartTime >= 5000) {
+                doublePointsActive = false;
+                renderer.deactivateDoublePoints();
+            }
         }
 
         handleCollisions();
@@ -222,7 +261,27 @@ public class GameComponent extends JPanel implements KeyListener {
                             c.getX(), c.getY(), Collectible.SIZE)) {
 
                 int earned = c.collect();
+
+                // Apply double points
+                if (doublePointsActive) {
+                    earned *= 2;
+                }
+
                 player.addScore(earned);
+
+                // 15% chance to instantly activate freeze
+                if (Math.random() < 0.15) {
+                    freezeActive = true;
+                    freezeStartTime = System.currentTimeMillis();
+                    renderer.activateFreeze();
+                }
+
+                // 15% chance to activate double points
+                if (Math.random() < 0.15) {
+                    doublePointsActive = true;
+                    doublePointsStartTime = System.currentTimeMillis();
+                    renderer.activateDoublePoints();
+                }
 
                 for (Collectible other : collectibles) {
                     if (!other.isCollected()) {
@@ -307,18 +366,18 @@ public class GameComponent extends JPanel implements KeyListener {
         renderer.renderWorld(g2, maze, player, zombies, collectibles, width, height);
         camera.reset(g2);
 
-        // NIGHT MODE (correct call, uses maze for centering)
+        // NIGHT MODE
         if (nightMode && gsm.isPlaying()) {
             renderer.renderNightMode(g2, player, maze, width, height);
         }
 
-        // HUD stays bright
+        // HUD
         renderer.renderHUD(g2, player, dangerDetector.isInDanger(), width, height);
 
         // Flash effect
         renderer.renderFlash(g2, player, width, height);
 
-        // Overlays (title, pause, win, game over)
+        // Overlays
         renderer.renderOverlays(g2, gsm, player, width, height);
 
         // Transition overlay
@@ -348,6 +407,12 @@ public class GameComponent extends JPanel implements KeyListener {
             int lw = fm.stringWidth(lvl);
             g2.drawString(lvl, (width - lw) / 2, height / 2 - 80);
         }
+
+        // Freeze border
+        renderer.renderFreezeBorder(g2, width, height);
+
+        // Double Points border
+        renderer.renderDoublePointsBorder(g2, width, height);
 
         g2.dispose();
     }
