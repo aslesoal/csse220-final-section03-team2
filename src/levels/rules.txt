@@ -1,0 +1,9 @@
+---------------------------------------------------------------------
+• Avoid zombies — they cost you lives
+• Collect all gems to unlock the exit
+• Freeze (15%): Zombies stop for 3 seconds
+• Double Points (15%): Score doubled for 5 seconds
+• Night Mode (N): Toggle visibility
+• Restart (R): Restart game during play
+• Leaderboard (L): View high scores
+• Pause (P): Pause the game
