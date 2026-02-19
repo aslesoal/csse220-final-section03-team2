@@ -59,6 +59,9 @@ public class GameComponent extends JPanel implements KeyListener {
     // RULES TEXT
     private List<String> rulesLines = new ArrayList<>();
 
+    // Return mode for rules screen
+    private GameMode rulesReturnMode = GameMode.TITLE;
+
     public GameComponent() {
         setFocusable(true);
         addKeyListener(this);
@@ -392,7 +395,7 @@ public class GameComponent extends JPanel implements KeyListener {
         // Flash effect
         renderer.renderFlash(g2, player, width, height);
 
-        // UPDATE NIGHT MODE BEFORE DRAWING TITLE SCREEN
+        // Update night mode before overlays
         renderer.setNightMode(nightMode);
 
         // Overlays
@@ -452,6 +455,7 @@ public class GameComponent extends JPanel implements KeyListener {
                 nightMode = !nightMode;
             }
             if (code == KeyEvent.VK_H) {
+                rulesReturnMode = GameMode.TITLE;
                 gsm.setMode(GameMode.RULES);
             }
             return;
@@ -460,23 +464,51 @@ public class GameComponent extends JPanel implements KeyListener {
         // RULES SCREEN
         if (gsm.isRules()) {
             if (code == KeyEvent.VK_H) {
-                fullRestart();              
-                gsm.setMode(GameMode.TITLE);
-            }
-            return;
-        }
 
-        // GLOBAL RULES ACCESS (except during gameplay)
-        if (!gsm.isPlaying() && code == KeyEvent.VK_H) {
-            gsm.setMode(GameMode.RULES);
+                // If returning to title, full restart
+                if (rulesReturnMode == GameMode.TITLE) {
+                    fullRestart();
+                    gsm.setMode(GameMode.TITLE);
+                    return;
+                }
+
+                gsm.setMode(rulesReturnMode);
+                return;
+            }
             return;
         }
 
         // LEADERBOARD ACCESS
         if (code == KeyEvent.VK_L) {
-            GameMode returnMode = gsm.getMode();
+
+            GameMode current = gsm.getMode();
+            GameMode returnMode = current;
+
+            // If playing, pause the game while leaderboard is open
+            if (current == GameMode.PLAYING) {
+                gsm.setMode(GameMode.PAUSED);
+                returnMode = GameMode.PAUSED;
+            }
+
             LeaderboardPanel.showLeaderboard(this);
+
             gsm.setMode(returnMode);
+            return;
+        }
+
+        // RULES ACCESS DURING GAMEPLAY OR PAUSE
+        if (code == KeyEvent.VK_H) {
+
+            GameMode current = gsm.getMode();
+            rulesReturnMode = current;
+
+            // If playing, pause first
+            if (current == GameMode.PLAYING) {
+                gsm.setMode(GameMode.PAUSED);
+                rulesReturnMode = GameMode.PAUSED;
+            }
+
+            gsm.setMode(GameMode.RULES);
             return;
         }
 

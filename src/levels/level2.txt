@@ -1,3 +1,11 @@
+# TILE LEGEND
+# █ = Wall
+#   = Floor
+# P = Player Spawn
+# z = Zombie Spawn
+# X = Exit
+
+
 ███████████████
 █P    █   ██  █
 ███ █ ███ ██ ██

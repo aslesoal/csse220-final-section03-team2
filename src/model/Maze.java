@@ -26,7 +26,15 @@ public class Maze {
             ArrayList<char[]> fileContents = new ArrayList<>();
 
             while (fileReader.hasNext()) {
-                fileContents.add(fileReader.nextLine().toCharArray());
+                String line = fileReader.nextLine();
+
+                // Skip comment lines
+                if (line.startsWith("#")) continue;
+
+                // Skip blank lines
+                if (line.trim().isEmpty()) continue;
+
+                fileContents.add(line.toCharArray());
             }
             fileReader.close();
 
