@@ -18,6 +18,13 @@ public class Renderer {
     // RULES TEXT (loaded by GameComponent)
     private List<String> rulesText;
 
+    // NIGHT MODE STATUS (passed in from GameComponent)
+    private boolean nightMode = false;
+
+    public void setNightMode(boolean value) {
+        this.nightMode = value;
+    }
+
     public void setRulesText(List<String> lines) {
         this.rulesText = lines;
     }
@@ -236,27 +243,32 @@ public class Renderer {
             g2.setFont(new Font("Arial", Font.BOLD, 24));
             drawCenteredString(g2, "Press ENTER to Start", 310, width);
             drawCenteredString(g2, "Press N to Toggle Night Mode", 350, width);
-            drawCenteredString(g2, "Press H for Rules", 390, width);
+
+            // Night Mode status
+            String nightStatus = nightMode ? "Night Mode: ON" : "Night Mode: OFF";
+            drawCenteredString(g2, nightStatus, 380, width);
+
+            drawCenteredString(g2, "Press H for Rules", 420, width);
         }
 
         // RULES SCREEN
         if (gsm.isRules()) {
-            g2.setColor(new Color(0f, 0f, 0f, 0.75f));
+            g2.setColor(new Color(0f, 0f, 0f, 0.85f));
             g2.fillRect(0, 0, width, height);
 
             // Title centered
-            g2.setFont(new Font("Arial", Font.BOLD, 42));
+            g2.setFont(new Font("Arial", Font.BOLD, 36));
             g2.setColor(Color.WHITE);
             drawCenteredString(g2, "GAME RULES", 80, width);
 
-            // Left aligned rules text
+            // Left‑aligned rules text
             g2.setFont(new Font("Arial", Font.PLAIN, 18));
             int y = 100;
             int leftX = 20;
 
             for (String line : rulesText) {
                 g2.drawString(line, leftX, y);
-                y += 28;
+                y += 30;
             }
 
             // Footer centered

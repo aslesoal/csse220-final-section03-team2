@@ -392,6 +392,9 @@ public class GameComponent extends JPanel implements KeyListener {
         // Flash effect
         renderer.renderFlash(g2, player, width, height);
 
+        // UPDATE NIGHT MODE BEFORE DRAWING TITLE SCREEN
+        renderer.setNightMode(nightMode);
+
         // Overlays
         renderer.renderOverlays(g2, gsm, player, width, height);
 
@@ -457,8 +460,8 @@ public class GameComponent extends JPanel implements KeyListener {
         // RULES SCREEN
         if (gsm.isRules()) {
             if (code == KeyEvent.VK_H) {
-                fullRestart();              // reset EVERYTHING
-                gsm.setMode(GameMode.TITLE); // return to fresh boot state
+                fullRestart();              
+                gsm.setMode(GameMode.TITLE);
             }
             return;
         }
@@ -471,9 +474,9 @@ public class GameComponent extends JPanel implements KeyListener {
 
         // LEADERBOARD ACCESS
         if (code == KeyEvent.VK_L) {
-            GameMode returnMode = gsm.getMode();   // store EXACT current mode
+            GameMode returnMode = gsm.getMode();
             LeaderboardPanel.showLeaderboard(this);
-            gsm.setMode(returnMode);               // restore it exactly
+            gsm.setMode(returnMode);
             return;
         }
 
