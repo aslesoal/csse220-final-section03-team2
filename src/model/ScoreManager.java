@@ -7,6 +7,9 @@ public class ScoreManager {
 
     private static final String FILE = "scores.txt";
 
+    // Prevent instantiation (utility class)
+    private ScoreManager() {}
+
     public static void saveScore(String name, int score) {
         try (PrintWriter out = new PrintWriter(new FileWriter(FILE, true))) {
             out.println(name + "," + score);

@@ -5,6 +5,9 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import ui.HUD;
+import ui.OverlayRenderer;
+
 public class Renderer {
 
     // Freeze border state
@@ -20,6 +23,10 @@ public class Renderer {
 
     // NIGHT MODE STATUS (passed in from GameComponent)
     private boolean nightMode = false;
+
+    // New helper classes
+    private HUD hud = new HUD();
+    private OverlayRenderer overlayRenderer = new OverlayRenderer();
 
     public void setNightMode(boolean value) {
         this.nightMode = value;
@@ -62,9 +69,12 @@ public class Renderer {
                             List<Collectible> collectibles,
                             int width, int height) {
 
-        int mazeSize = GameConstant.TILE_SIZE * maze.getRows();
-        int offsetX = (width - mazeSize) / 2;
-        int offsetY = (height - mazeSize) / 2;
+        // *** FIXED: correct maze centering ***
+        int mazeWidth  = Maze.TILE_SIZE * maze.getCols();
+        int mazeHeight = Maze.TILE_SIZE * maze.getRows();
+
+        int offsetX = (width  - mazeWidth)  / 2;
+        int offsetY = (height - mazeHeight) / 2;
 
         g2.translate(offsetX, offsetY);
 
@@ -129,9 +139,12 @@ public class Renderer {
 
         int radius = 100;
 
-        int mazeSize = GameConstant.TILE_SIZE * maze.getRows();
-        int offsetX = (width - mazeSize) / 2;
-        int offsetY = (height - mazeSize) / 2;
+        // *** FIXED: correct maze centering here too ***
+        int mazeWidth  = Maze.TILE_SIZE * maze.getCols();
+        int mazeHeight = Maze.TILE_SIZE * maze.getRows();
+
+        int offsetX = (width  - mazeWidth)  / 2;
+        int offsetY = (height - mazeHeight) / 2;
 
         int px = (int) player.getX() + Player.SIZE / 2 + offsetX;
         int py = (int) player.getY() + Player.SIZE / 2 + offsetY;
@@ -144,32 +157,8 @@ public class Renderer {
     }
 
     // ---------------------------------------------------------
-    // HUD
+    // FLASH EFFECT
     // ---------------------------------------------------------
-    public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
-
-        g2.setColor(new Color(0, 0, 0, 180));
-        g2.fillRect(0, 0, width, 60);
-
-        g2.setColor(Color.WHITE);
-
-        g2.setFont(new Font("Arial", Font.BOLD, 18));
-        g2.drawString("R: Restart   P: Pause   L: Leaderboard   N: Night Mode   H: Rules", 10, 22);
-
-        g2.setFont(new Font("Arial", Font.BOLD, 20));
-        g2.drawString("Lives: " + player.getLives(), 10, 50);
-        g2.drawString("Score: " + player.getScore(), 150, 50);
-
-        if (danger) {
-            g2.setColor(new Color(1f, 0f, 0f, 0.4f));
-            int t = 6;
-            g2.fillRect(0, 0, width, t);
-            g2.fillRect(0, height - t, width, t);
-            g2.fillRect(0, 0, t, height);
-            g2.fillRect(width - t, 0, t, height);
-        }
-    }
-
     public void renderFlash(Graphics2D g2, Player player, int width, int height) {
         if (player.isFlashing()) {
             g2.setColor(new Color(1f, 0f, 0f, 0.35f));
@@ -226,102 +215,16 @@ public class Renderer {
     }
 
     // ---------------------------------------------------------
-    // OVERLAYS (Title, Pause, Win, Game Over, Rules)
+    // OVERLAYS (delegated to OverlayRenderer)
     // ---------------------------------------------------------
     public void renderOverlays(Graphics2D g2, GameStateManager gsm, Player player, int width, int height) {
+        overlayRenderer.render(g2, gsm, player, rulesText, nightMode, width, height);
+    }
 
-        // TITLE SCREEN
-        if (gsm.isTitle() || gsm.getTitleAlpha() > 0f) {
-            float a = gsm.getTitleAlpha();
-            g2.setColor(new Color(0f, 0f, 0f, a * 0.7f));
-            g2.fillRect(0, 0, width, height);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 48));
-            g2.setColor(new Color(1f, 1f, 1f, a));
-            drawCenteredString(g2, "Zombie Maze", 250, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 24));
-            drawCenteredString(g2, "Press ENTER to Start", 310, width);
-            drawCenteredString(g2, "Press N to Toggle Night Mode", 350, width);
-
-            // Night Mode status
-            String nightStatus = nightMode ? "Night Mode: ON" : "Night Mode: OFF";
-            drawCenteredString(g2, nightStatus, 380, width);
-
-            drawCenteredString(g2, "Press H for Rules", 420, width);
-        }
-
-        // RULES SCREEN
-        if (gsm.isRules()) {
-            g2.setColor(new Color(0f, 0f, 0f, 0.85f));
-            g2.fillRect(0, 0, width, height);
-
-            // Title centered
-            g2.setFont(new Font("Arial", Font.BOLD, 36));
-            g2.setColor(Color.WHITE);
-            drawCenteredString(g2, "GAME RULES", 80, width);
-
-            // Left‑aligned rules text
-            g2.setFont(new Font("Arial", Font.PLAIN, 18));
-            int y = 100;
-            int leftX = 20;
-
-            for (String line : rulesText) {
-                g2.drawString(line, leftX, y);
-                y += 30;
-            }
-
-            // Footer centered
-            g2.setFont(new Font("Arial", Font.BOLD, 22));
-            drawCenteredString(g2, "Press H to return", height - 80, width);
-        }
-
-        // PAUSE
-        if (gsm.isPaused()) {
-            float a = gsm.getPauseAlpha();
-            g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
-            g2.fillRect(0, 0, width, height);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 48));
-            g2.setColor(new Color(1f, 1f, 0f, a));
-            drawCenteredString(g2, "PAUSED", 260, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 24));
-            drawCenteredString(g2, "Press P to Resume", 310, width);
-        }
-
-        // WIN
-        if (gsm.isWin()) {
-            float a = gsm.getWinAlpha();
-            g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
-            g2.fillRect(0, 0, width, height);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 48));
-            g2.setColor(new Color(0f, 1f, 0f, a));
-            drawCenteredString(g2, "YOU WIN!", 240, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 28));
-            drawCenteredString(g2, "Final Score: " + player.getScore(), 300, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 24));
-            drawCenteredString(g2, "Press L to view Leaderboard", 350, width);
-        }
-
-        // GAME OVER
-        if (gsm.isGameOver()) {
-            float a = gsm.getGameOverAlpha();
-            g2.setColor(new Color(0f, 0f, 0f, a * 0.6f));
-            g2.fillRect(0, 0, width, height);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 48));
-            g2.setColor(new Color(1f, 0f, 0f, a));
-            drawCenteredString(g2, "GAME OVER", 240, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 28));
-            drawCenteredString(g2, "Final Score: " + player.getScore(), 300, width);
-
-            g2.setFont(new Font("Arial", Font.BOLD, 24));
-            drawCenteredString(g2, "Press L to view Leaderboard", 350, width);
-        }
+    // ---------------------------------------------------------
+    // HUD (delegated to HUD class)
+    // ---------------------------------------------------------
+    public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
+        hud.render(g2, player, danger, width, height);
     }
 }

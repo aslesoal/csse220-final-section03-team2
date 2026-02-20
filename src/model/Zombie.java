@@ -4,12 +4,16 @@ import java.awt.Image;
 import javax.imageio.ImageIO;
 import java.util.Random;
 
-public class Zombie {
+public class Zombie extends Entity {
 
     public static final int SIZE = 22;
 
-    private double x;
-    private double y;
+    // Constants moved here (GameConstant removed)
+    public static final int COLLISION_COOLDOWN_FRAMES = 30;
+
+    // FIXED: correct folder name
+    public static final String ZOMBIE_SPRITE = "/images/zombie.png";
+
     private double speed = 2.6;
 
     private final Maze maze;
@@ -27,11 +31,13 @@ public class Zombie {
     public Zombie(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
-        this.x = startCol * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
-        this.y = startRow * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
+        this.size = SIZE;
+
+        this.x = startCol * Maze.TILE_SIZE + (Maze.TILE_SIZE - SIZE) / 2.0;
+        this.y = startRow * Maze.TILE_SIZE + (Maze.TILE_SIZE - SIZE) / 2.0;
 
         try {
-            sprite = ImageIO.read(Zombie.class.getResource(GameConstant.ZOMBIE_SPRITE));
+            sprite = ImageIO.read(Zombie.class.getResource(ZOMBIE_SPRITE));
         } catch (Exception e) {
             sprite = null;
             System.err.println("Zombie sprite not found: " + e);
@@ -41,12 +47,9 @@ public class Zombie {
     }
 
     public Image getSprite() { return sprite; }
-    public double getX() { return x; }
-    public double getY() { return y; }
-    public int getSize() { return SIZE; }
 
     public boolean isInCollisionCooldown() { return collisionCooldown > 0; }
-    public void triggerCollisionCooldown() { collisionCooldown = 30; }
+    public void triggerCollisionCooldown() { collisionCooldown = COLLISION_COOLDOWN_FRAMES; }
     public void tickCollisionCooldown() { if (collisionCooldown > 0) collisionCooldown--; }
 
     public double getFacingAngle() { return facingAngle; }
@@ -55,10 +58,10 @@ public class Zombie {
         int dir = random.nextInt(4);
 
         switch (dir) {
-            case 0: dirX = 1;  dirY = 0;  break;
-            case 1: dirX = -1; dirY = 0;  break;
-            case 2: dirX = 0;  dirY = 1;  break;
-            case 3: dirX = 0;  dirY = -1; break;
+            case 0 -> { dirX = 1;  dirY = 0; }
+            case 1 -> { dirX = -1; dirY = 0; }
+            case 2 -> { dirX = 0;  dirY = 1; }
+            case 3 -> { dirX = 0;  dirY = -1; }
         }
     }
 
@@ -84,7 +87,7 @@ public class Zombie {
     }
 
     private boolean collidesWithWall(double px, double py) {
-        int tileSize = GameConstant.TILE_SIZE;
+        int tileSize = Maze.TILE_SIZE;
 
         int left   = (int) px;
         int right  = (int) (px + SIZE);

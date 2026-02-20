@@ -16,50 +16,50 @@ import java.util.ArrayList;
 
 public class GameComponent extends JPanel implements KeyListener {
 
-    private final GameStateManager gsm = new GameStateManager();
-    private final Camera camera = new Camera();
-    private final DangerDetector dangerDetector = new DangerDetector();
-    private final Renderer renderer = new Renderer();
+    final GameStateManager gsm = new GameStateManager();
+    final Camera camera = new Camera();
+    final DangerDetector dangerDetector = new DangerDetector();
+    final Renderer renderer = new Renderer();
+    final CollisionSystem collisionSystem = new CollisionSystem();
 
-    private Maze maze;
-    private Player player;
-    private List<Zombie> zombies;
-    private List<Collectible> collectibles;
-    private Spawner spawner;
+    Maze maze;
+    Player player;
+    List<Zombie> zombies;
+    List<Collectible> collectibles;
+    Spawner spawner;
 
-    private boolean up, down, left, right;
-    private boolean exitUnlocked = false;
+    // Getter added for encapsulation + UML alignment
+    public Maze getMaze() {
+        return maze;
+    }
 
-    private boolean pendingWinPrompt = false;
-    private boolean pendingGameOverPrompt = false;
+    boolean up, down, left, right;
+    boolean exitUnlocked = false;
 
-    private long winFadeCompleteTime = 0L;
-    private long gameOverFadeCompleteTime = 0L;
+    boolean pendingWinPrompt = false;
+    boolean pendingGameOverPrompt = false;
 
-    private int currentLevel = 1;
-    private final int maxLevel = 2;
+    long winFadeCompleteTime = 0L;
+    long gameOverFadeCompleteTime = 0L;
 
-    private int carryoverScore = 0;
+    int currentLevel = 1;
+    final int maxLevel = 2;
 
-    private boolean inTransition = false;
-    private long transitionStartTime = 0L;
-    private final long transitionDuration = 3000;
+    int carryoverScore = 0;
 
-    // NIGHT MODE
-    private boolean nightMode = false;
+    boolean inTransition = false;
+    long transitionStartTime = 0L;
+    final long transitionDuration = 3000;
 
-    // FREEZE
-    private boolean freezeActive = false;
-    private long freezeStartTime = 0L;
+    boolean nightMode = false;
 
-    // DOUBLE POINTS
-    private boolean doublePointsActive = false;
-    private long doublePointsStartTime = 0L;
+    boolean freezeActive = false;
+    long freezeStartTime = 0L;
 
-    // RULES TEXT
+    boolean doublePointsActive = false;
+    long doublePointsStartTime = 0L;
+
     private List<String> rulesLines = new ArrayList<>();
-
-    // Return mode for rules screen
     private GameMode rulesReturnMode = GameMode.TITLE;
 
     public GameComponent() {
@@ -85,7 +85,7 @@ public class GameComponent extends JPanel implements KeyListener {
         renderer.setRulesText(rulesLines);
     }
 
-    private void loadLevel(int level) {
+    void loadLevel(int level) {
         String path = "bin/levels/level" + level + ".txt";
         maze = new Maze(new File(path));
         spawner = new Spawner(maze);
@@ -165,7 +165,6 @@ public class GameComponent extends JPanel implements KeyListener {
 
     private void handleDelayedPrompts() {
 
-        // WIN delayed prompt
         if (pendingWinPrompt) {
 
             if (!gsm.isWin()) {
@@ -188,7 +187,6 @@ public class GameComponent extends JPanel implements KeyListener {
             }
         }
 
-        // GAME OVER delayed prompt
         if (pendingGameOverPrompt) {
 
             if (!gsm.isGameOver()) {
@@ -228,7 +226,6 @@ public class GameComponent extends JPanel implements KeyListener {
             c.updateValue();
         }
 
-        // Freeze timer
         if (freezeActive) {
             if (System.currentTimeMillis() - freezeStartTime >= 3000) {
                 freezeActive = false;
@@ -236,7 +233,6 @@ public class GameComponent extends JPanel implements KeyListener {
             }
         }
 
-        // Double Points timer
         if (doublePointsActive) {
             if (System.currentTimeMillis() - doublePointsStartTime >= 5000) {
                 doublePointsActive = false;
@@ -244,101 +240,12 @@ public class GameComponent extends JPanel implements KeyListener {
             }
         }
 
-        handleCollisions();
+        collisionSystem.update(this, player, zombies, collectibles, maze);
+
         dangerDetector.update(player, zombies);
     }
 
-    private void handleCollisions() {
-
-        for (Zombie z : zombies) {
-            if (z.isInCollisionCooldown()) continue;
-
-            if (overlap(player.getX(), player.getY(), Player.SIZE,
-                    z.getX(), z.getY(), Zombie.SIZE)) {
-
-                z.triggerCollisionCooldown();
-
-                if (!player.isInvincible()) {
-                    player.loseLife();
-                    player.triggerInvincibility();
-                    player.triggerFlash();
-                    camera.triggerShake();
-
-                    if (player.isDead()) {
-                        handleGameEnd(GameMode.GAME_OVER);
-                        return;
-                    }
-                }
-            }
-        }
-
-        int collectedCount = 0;
-        for (Collectible c : collectibles) {
-            if (!c.isCollected() &&
-                    overlap(player.getX(), player.getY(), Player.SIZE,
-                            c.getX(), c.getY(), Collectible.SIZE)) {
-
-                int earned = c.collect();
-
-                // Apply double points
-                if (doublePointsActive) {
-                    earned *= 2;
-                }
-
-                player.addScore(earned);
-
-                // 15% chance to instantly activate freeze
-                if (Math.random() < 0.15) {
-                    freezeActive = true;
-                    freezeStartTime = System.currentTimeMillis();
-                    renderer.activateFreeze();
-                }
-
-                // 15% chance to activate double points
-                if (Math.random() < 0.15) {
-                    doublePointsActive = true;
-                    doublePointsStartTime = System.currentTimeMillis();
-                    renderer.activateDoublePoints();
-                }
-
-                for (Collectible other : collectibles) {
-                    if (!other.isCollected()) {
-                        other.resetValue();
-                    }
-                }
-            }
-
-            if (c.isCollected()) collectedCount++;
-        }
-
-        if (collectedCount == collectibles.size()) {
-            exitUnlocked = true;
-        }
-
-        int tileSize = GameConstant.TILE_SIZE;
-        int row = (int) ((player.getY() + Player.SIZE / 2) / tileSize);
-        int col = (int) ((player.getX() + Player.SIZE / 2) / tileSize);
-
-        if (exitUnlocked && maze.isExit(row, col)) {
-
-            if (currentLevel < maxLevel) {
-
-                carryoverScore = player.getScore();
-
-                currentLevel++;
-                loadLevel(currentLevel);
-
-                inTransition = true;
-                transitionStartTime = System.currentTimeMillis();
-                gsm.setMode(GameMode.TRANSITION);
-                return;
-            }
-
-            handleGameEnd(GameMode.WIN);
-        }
-    }
-
-    private void handleGameEnd(GameMode mode) {
+    void handleGameEnd(GameMode mode) {
         inTransition = false;
         gsm.setMode(mode);
 
@@ -361,8 +268,8 @@ public class GameComponent extends JPanel implements KeyListener {
         }
     }
 
-    private boolean overlap(double x1, double y1, int size1,
-                            double x2, double y2, int size2) {
+    boolean overlap(double x1, double y1, int size1,
+                    double x2, double y2, int size2) {
         return x1 < x2 + size2 &&
                 x1 + size1 > x2 &&
                 y1 < y2 + size2 &&
@@ -379,29 +286,22 @@ public class GameComponent extends JPanel implements KeyListener {
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, width, height);
 
-        // WORLD
         camera.apply(g2);
         renderer.renderWorld(g2, maze, player, zombies, collectibles, width, height);
         camera.reset(g2);
 
-        // NIGHT MODE
         if (nightMode && gsm.isPlaying()) {
             renderer.renderNightMode(g2, player, maze, width, height);
         }
 
-        // HUD
         renderer.renderHUD(g2, player, dangerDetector.isInDanger(), width, height);
 
-        // Flash effect
         renderer.renderFlash(g2, player, width, height);
 
-        // Update night mode before overlays
         renderer.setNightMode(nightMode);
 
-        // Overlays
         renderer.renderOverlays(g2, gsm, player, width, height);
 
-        // Transition overlay
         if (inTransition && gsm.getMode() == GameMode.TRANSITION) {
 
             long elapsed = System.currentTimeMillis() - transitionStartTime;
@@ -429,24 +329,17 @@ public class GameComponent extends JPanel implements KeyListener {
             g2.drawString(lvl, (width - lw) / 2, height / 2 - 80);
         }
 
-        // Freeze border
         renderer.renderFreezeBorder(g2, width, height);
 
-        // Double Points border
         renderer.renderDoublePointsBorder(g2, width, height);
 
         g2.dispose();
     }
 
-    // ---------------------------------------------------------
-    // KEY LISTENER METHODS
-    // ---------------------------------------------------------
-
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
 
-        // TITLE SCREEN
         if (gsm.isTitle()) {
             if (code == KeyEvent.VK_ENTER) {
                 gsm.setMode(GameMode.PLAYING);
@@ -461,11 +354,9 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
-        // RULES SCREEN
         if (gsm.isRules()) {
             if (code == KeyEvent.VK_H) {
 
-                // If returning to title, full restart
                 if (rulesReturnMode == GameMode.TITLE) {
                     fullRestart();
                     gsm.setMode(GameMode.TITLE);
@@ -478,13 +369,11 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
-        // LEADERBOARD ACCESS
         if (code == KeyEvent.VK_L) {
 
             GameMode current = gsm.getMode();
             GameMode returnMode = current;
 
-            // If playing, pause the game while leaderboard is open
             if (current == GameMode.PLAYING) {
                 gsm.setMode(GameMode.PAUSED);
                 returnMode = GameMode.PAUSED;
@@ -496,13 +385,11 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
-        // RULES ACCESS DURING GAMEPLAY OR PAUSE
         if (code == KeyEvent.VK_H) {
 
             GameMode current = gsm.getMode();
             rulesReturnMode = current;
 
-            // If playing, pause first
             if (current == GameMode.PLAYING) {
                 gsm.setMode(GameMode.PAUSED);
                 rulesReturnMode = GameMode.PAUSED;
@@ -512,7 +399,6 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
-        // WIN / GAME OVER
         if (gsm.isWin() || gsm.isGameOver()) {
             if (code == KeyEvent.VK_R) {
                 fullRestart();
@@ -520,14 +406,12 @@ public class GameComponent extends JPanel implements KeyListener {
             return;
         }
 
-        // PAUSE
         if (code == KeyEvent.VK_P) {
             if (gsm.isPlaying()) gsm.setMode(GameMode.PAUSED);
             else if (gsm.isPaused()) gsm.setMode(GameMode.PLAYING);
             return;
         }
 
-        // GAMEPLAY CONTROLS
         if (!gsm.isPlaying()) return;
 
         if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) up = true;

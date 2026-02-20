@@ -1,20 +1,21 @@
 package model;
 
-public class Collectible {
+public class Collectible extends Entity {
 
     public static final int SIZE = 16;
 
-    private double x;
-    private double y;
     private boolean collected = false;
 
-    private int maxValue = 1000;
+    private final int maxValue = 1000;
     private int currentValue = 1000;
-    private int decayRate = 2;
+    private final int decayRate = 2;
 
     public Collectible(double x, double y) {
+        this.size = SIZE;
+
         this.x = x;
         this.y = y;
+
         this.currentValue = maxValue;
     }
 
@@ -30,13 +31,10 @@ public class Collectible {
         return currentValue;
     }
 
-    // NEW: Reset remaining collectibles to 1000
     public void resetValue() {
         currentValue = maxValue;
     }
 
     public boolean isCollected() { return collected; }
-    public double getX() { return x; }
-    public double getY() { return y; }
     public int getValue() { return currentValue; }
 }

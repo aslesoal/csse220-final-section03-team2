@@ -8,6 +8,9 @@ import java.util.List;
 
 public class LeaderboardPanel {
 
+    // Prevent instantiation (utility class)
+    private LeaderboardPanel() {}
+
     private static void populatePanel(JPanel panel) {
         panel.removeAll();
 

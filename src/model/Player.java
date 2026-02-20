@@ -3,18 +3,24 @@ package model;
 import java.awt.Image;
 import javax.imageio.ImageIO;
 
-public class Player {
+public class Player extends Entity {
 
     public static final int SIZE = 18;
 
-    private double x;
-    private double y;
+    // Constants moved here (GameConstant removed)
+    public static final int INITIAL_LIVES = 4;
+    public static final int INVINCIBILITY_FRAMES = 60;
+    public static final int FLASH_FRAMES = 20;
+
+    // FIXED: correct folder name
+    public static final String PLAYER_SPRITE = "/images/player.png";
+
     private double speed = 3.0;
 
     private final Maze maze;
     private Image sprite;
 
-    private int lives = GameConstant.INITIAL_LIVES;
+    private int lives = INITIAL_LIVES;
     private int score = 0;
 
     private int invincibleTimer = 0;
@@ -25,20 +31,20 @@ public class Player {
     public Player(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
-        this.x = startCol * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
-        this.y = startRow * GameConstant.TILE_SIZE + (GameConstant.TILE_SIZE - SIZE) / 2.0;
+        this.size = SIZE;
+
+        this.x = startCol * Maze.TILE_SIZE + (Maze.TILE_SIZE - SIZE) / 2.0;
+        this.y = startRow * Maze.TILE_SIZE + (Maze.TILE_SIZE - SIZE) / 2.0;
 
         try {
-            sprite = ImageIO.read(Player.class.getResource(GameConstant.PLAYER_SPRITE));
+            sprite = ImageIO.read(Player.class.getResource(PLAYER_SPRITE));
         } catch (Exception e) {
             sprite = null;
+            System.err.println("Player sprite not found: " + e);
         }
     }
 
     public Image getSprite() { return sprite; }
-    public double getX() { return x; }
-    public double getY() { return y; }
-    public int getSize() { return SIZE; }
 
     public int getLives() { return lives; }
     public int getScore() { return score; }
@@ -50,11 +56,11 @@ public class Player {
     public boolean isDead() { return lives <= 0; }
 
     public boolean isInvincible() { return invincibleTimer > 0; }
-    public void triggerInvincibility() { invincibleTimer = GameConstant.INVINCIBILITY_FRAMES; }
+    public void triggerInvincibility() { invincibleTimer = INVINCIBILITY_FRAMES; }
     public void tickInvincibility() { if (invincibleTimer > 0) invincibleTimer--; }
 
     public boolean isFlashing() { return flashTimer > 0; }
-    public void triggerFlash() { flashTimer = GameConstant.FLASH_FRAMES; }
+    public void triggerFlash() { flashTimer = FLASH_FRAMES; }
     public void tickFlash() { if (flashTimer > 0) flashTimer--; }
 
     public double getFacingAngle() { return facingAngle; }
@@ -86,7 +92,7 @@ public class Player {
     }
 
     private boolean collidesWithWall(double px, double py) {
-        int tileSize = GameConstant.TILE_SIZE;
+        int tileSize = Maze.TILE_SIZE;
 
         int left   = (int) px;
         int right  = (int) (px + SIZE);
@@ -105,7 +111,7 @@ public class Player {
     }
 
     public void reset() {
-        lives = GameConstant.INITIAL_LIVES;
+        lives = INITIAL_LIVES;
         score = 0;
     }
 }

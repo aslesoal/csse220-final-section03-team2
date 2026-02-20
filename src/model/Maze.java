@@ -9,6 +9,9 @@ import java.util.Scanner;
 
 public class Maze {
 
+    // TILE SIZE now lives here (GameConstant removed)
+    public static final int TILE_SIZE = 32;
+
     private Tile[][] tiles;
     private int rows;
     private int cols;
@@ -101,7 +104,7 @@ public class Maze {
     }
 
     public void draw(Graphics2D g2) {
-        int tileSize = GameConstant.TILE_SIZE;
+        int tileSize = TILE_SIZE;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 tiles[r][c].draw(g2, r, c, tileSize);

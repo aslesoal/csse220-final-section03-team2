@@ -11,8 +11,17 @@ public class Tile {
         this.type = type;
     }
 
-    public boolean isWalkable() { return type.isWalkable(); }
-    public boolean isExit() { return type.isExit(); }
+    public TileType getType() {
+        return type;
+    }
+
+    public boolean isWalkable() { 
+        return type.isWalkable(); 
+    }
+
+    public boolean isExit() { 
+        return type.isExit(); 
+    }
 
     public void draw(Graphics2D g2, int row, int col, int tileSize) {
         int x = col * tileSize;
@@ -21,7 +30,7 @@ public class Tile {
         if (!type.isWalkable()) {
             g2.setColor(Color.DARK_GRAY);   // WALL
         } else {
-            g2.setColor(Color.LIGHT_GRAY);       // FLOOR
+            g2.setColor(Color.LIGHT_GRAY);  // FLOOR
         }
 
         g2.fillRect(x, y, tileSize, tileSize);

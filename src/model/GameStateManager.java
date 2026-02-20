@@ -15,13 +15,13 @@ public class GameStateManager {
     public GameMode getMode() { return mode; }
     public void setMode(GameMode mode) { this.mode = mode; }
 
-    public boolean isTitle()    { return mode == GameMode.TITLE; }
-    public boolean isPlaying()  { return mode == GameMode.PLAYING; }
-    public boolean isPaused()   { return mode == GameMode.PAUSED; }
-    public boolean isWin()      { return mode == GameMode.WIN; }
-    public boolean isGameOver() { return mode == GameMode.GAME_OVER; }
-    public boolean isRules() { return mode == GameMode.RULES; }
-
+    public boolean isTitle()      { return mode == GameMode.TITLE; }
+    public boolean isPlaying()    { return mode == GameMode.PLAYING; }
+    public boolean isPaused()     { return mode == GameMode.PAUSED; }
+    public boolean isWin()        { return mode == GameMode.WIN; }
+    public boolean isGameOver()   { return mode == GameMode.GAME_OVER; }
+    public boolean isRules()      { return mode == GameMode.RULES; }
+    public boolean isTransition() { return mode == GameMode.TRANSITION; }
 
     public float getTitleAlpha()    { return titleAlpha; }
     public float getPauseAlpha()    { return pauseAlpha; }

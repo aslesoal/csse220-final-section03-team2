@@ -7,17 +7,21 @@ import java.util.Random;
 
 public class Spawner {
 
+    // Constants now live here (GameConstant removed)
+    public static final int DEFAULT_ZOMBIE_COUNT = 8;
+    public static final int DEFAULT_COLLECTIBLE_COUNT = 10;
+
     private final Maze maze;
     private final Random random = new Random();
 
-    // ⭐ NEW: level-specific zombie count (defaults to constant)
-    private int zombieCount = GameConstant.ZOMBIE_COUNT;
+    // Level-specific zombie count (starts at default)
+    private int zombieCount = DEFAULT_ZOMBIE_COUNT;
 
     public Spawner(Maze maze) {
         this.maze = maze;
     }
 
-    // ⭐ NEW: allow GameComponent to override zombie count per level
+    // Allow GameComponent to override zombie count per level
     public void setZombieCount(int count) {
         this.zombieCount = count;
     }
@@ -51,11 +55,11 @@ public class Spawner {
         }
 
         // fallback: random spawning with spacing rules
-        int count = zombieCount; // ⭐ USE LEVEL-SPECIFIC COUNT
+        int count = zombieCount;
 
         // Player tile position
-        int pr = (int) ((player.getY() + Player.SIZE / 2) / GameConstant.TILE_SIZE);
-        int pc = (int) ((player.getX() + Player.SIZE / 2) / GameConstant.TILE_SIZE);
+        int pr = (int) ((player.getY() + Player.SIZE / 2) / Maze.TILE_SIZE);
+        int pc = (int) ((player.getX() + Player.SIZE / 2) / Maze.TILE_SIZE);
 
         while (zombies.size() < count) {
 
@@ -71,8 +75,8 @@ public class Spawner {
             // Must be at least 2 tiles from all existing zombies
             boolean tooClose = false;
             for (Zombie z : zombies) {
-                int zr = (int) (z.getY() / GameConstant.TILE_SIZE);
-                int zc = (int) (z.getX() / GameConstant.TILE_SIZE);
+                int zr = (int) (z.getY() / Maze.TILE_SIZE);
+                int zc = (int) (z.getX() / Maze.TILE_SIZE);
 
                 if (dist(row, col, zr, zc) < 2) {
                     tooClose = true;
@@ -92,7 +96,7 @@ public class Spawner {
     public List<Collectible> spawnCollectibles(List<Zombie> zombies) {
         List<Collectible> collectibles = new ArrayList<>();
 
-        int count = GameConstant.COLLECTIBLE_COUNT;
+        int count = DEFAULT_COLLECTIBLE_COUNT;
 
         while (collectibles.size() < count) {
             int row = random.nextInt(maze.getRows());
@@ -100,11 +104,11 @@ public class Spawner {
 
             if (!maze.isWalkable(row, col)) continue;
 
-            double x = col * GameConstant.TILE_SIZE +
-                       (GameConstant.TILE_SIZE - Collectible.SIZE) / 2.0;
+            double x = col * Maze.TILE_SIZE +
+                       (Maze.TILE_SIZE - Collectible.SIZE) / 2.0;
 
-            double y = row * GameConstant.TILE_SIZE +
-                       (GameConstant.TILE_SIZE - Collectible.SIZE) / 2.0;
+            double y = row * Maze.TILE_SIZE +
+                       (Maze.TILE_SIZE - Collectible.SIZE) / 2.0;
 
             collectibles.add(new Collectible(x, y));
         }
