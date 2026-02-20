@@ -4,14 +4,17 @@ import java.awt.Image;
 import javax.imageio.ImageIO;
 import java.util.Random;
 
+/*
+ * Handles zombie movement and collisions
+ */
 public class Zombie extends Entity {
 
     public static final int SIZE = 22;
 
-    // Constants moved here (GameConstant removed)
+    // Constants
     public static final int COLLISION_COOLDOWN_FRAMES = 30;
 
-    // FIXED: correct folder name
+    // sprite folder
     public static final String ZOMBIE_SPRITE = "/images/zombie.png";
 
     private double speed = 2.6;
@@ -28,6 +31,7 @@ public class Zombie extends Entity {
 
     private double facingAngle = 0.0;
 
+    //Spawning zombies in the middle of their tile and loading the sprite image
     public Zombie(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
@@ -48,12 +52,14 @@ public class Zombie extends Entity {
 
     public Image getSprite() { return sprite; }
 
+    //collision management
     public boolean isInCollisionCooldown() { return collisionCooldown > 0; }
     public void triggerCollisionCooldown() { collisionCooldown = COLLISION_COOLDOWN_FRAMES; }
     public void tickCollisionCooldown() { if (collisionCooldown > 0) collisionCooldown--; }
 
     public double getFacingAngle() { return facingAngle; }
 
+    //movement mechanics
     private void randomizeDirection() {
         int dir = random.nextInt(4);
 
@@ -65,6 +71,8 @@ public class Zombie extends Entity {
         }
     }
 
+
+    //cannot move through walls
     public void update() {
         tickCollisionCooldown();
 
@@ -86,6 +94,7 @@ public class Zombie extends Entity {
         }
     }
 
+    //collides with wall and picks a random direction to move int
     private boolean collidesWithWall(double px, double py) {
         int tileSize = Maze.TILE_SIZE;
 

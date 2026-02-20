@@ -3,6 +3,9 @@ package ui;
 import model.*;
 import java.util.List;
 
+/*
+ * Handles what happens when player collides with game components
+ */
 public class CollisionSystem {
 
     public void update(GameComponent gc,

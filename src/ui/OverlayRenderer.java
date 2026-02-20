@@ -4,9 +4,13 @@ import java.awt.*;
 import model.GameStateManager;
 import model.Player;
 
+/*
+ * Makes the different screens with their information
+ * Generates the border during the danger, freeze, and double points
+ */
 public class OverlayRenderer {
 
-    // Layout constants (removes magic numbers)
+    // Layout constants
     private static final int TITLE_Y_MAIN = 250;
     private static final int TITLE_Y_START = 310;
     private static final int TITLE_Y_NIGHT = 350;

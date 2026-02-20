@@ -1,5 +1,9 @@
 package model;
 
+/*
+ * Manages the state of the game based on what the player completes or asks for
+ * Controls which state the game returns to
+ */
 public class GameStateManager {
 
     private GameMode mode = GameMode.TITLE;
@@ -15,6 +19,7 @@ public class GameStateManager {
     public GameMode getMode() { return mode; }
     public void setMode(GameMode mode) { this.mode = mode; }
 
+    //changing the states based on the current happenings of the game
     public boolean isTitle()      { return mode == GameMode.TITLE; }
     public boolean isPlaying()    { return mode == GameMode.PLAYING; }
     public boolean isPaused()     { return mode == GameMode.PAUSED; }
@@ -36,6 +41,7 @@ public class GameStateManager {
         highScoreAlpha = 0f;
     }
 
+    //Handles all fade in of big screens
     public void updateFades() {
 
         if (!isTitle() && titleAlpha > 0f) {
@@ -78,6 +84,7 @@ public class GameStateManager {
         }
     }
 
+    //mechanics for restarting the game
     public void reset() {
         mode = GameMode.TITLE;
         titleAlpha = 1f;

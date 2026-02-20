@@ -6,7 +6,7 @@ import ui.GameWindow;
 
 /**
  * Class: MainApp
- * @author Put your team name here
+ * @author Section 03 Team 02
  * <br>Purpose: Top level class for CSSE220 Project containing main method 
  * Entry point for the final project.
  */

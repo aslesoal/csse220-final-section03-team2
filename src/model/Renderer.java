@@ -8,6 +8,9 @@ import java.util.List;
 import ui.HUD;
 import ui.OverlayRenderer;
 
+/*
+ * Renders all of the graphics for the game
+ */
 public class Renderer {
 
     // Freeze border state
@@ -18,13 +21,13 @@ public class Renderer {
     private boolean doublePointsActive = false;
     private long doublePointsStartTime = 0L;
 
-    // RULES TEXT (loaded by GameComponent)
+    // Rules Text
     private List<String> rulesText;
 
-    // NIGHT MODE STATUS (passed in from GameComponent)
+    // Night mode status
     private boolean nightMode = false;
 
-    // New helper classes
+    // Helper classes
     private HUD hud = new HUD();
     private OverlayRenderer overlayRenderer = new OverlayRenderer();
 
@@ -36,6 +39,7 @@ public class Renderer {
         this.rulesText = lines;
     }
 
+    //Enabling powerup systems
     public void activateFreeze() {
         freezeActive = true;
         freezeStartTime = System.currentTimeMillis();
@@ -69,7 +73,7 @@ public class Renderer {
                             List<Collectible> collectibles,
                             int width, int height) {
 
-        // *** FIXED: correct maze centering ***
+        // maze centering
         int mazeWidth  = Maze.TILE_SIZE * maze.getCols();
         int mazeHeight = Maze.TILE_SIZE * maze.getRows();
 
@@ -81,6 +85,8 @@ public class Renderer {
         maze.draw(g2);
 
         g2.setColor(Color.YELLOW);
+        
+        //Drawing collectibles
         for (Collectible c : collectibles) {
             if (!c.isCollected()) {
                 g2.fillOval((int) c.getX(), (int) c.getY(),
@@ -88,6 +94,7 @@ public class Renderer {
             }
         }
 
+        //Drawing zombies with sprite image or red circle
         for (Zombie z : zombies) {
             if (z.getSprite() != null) {
                 drawRotatedSprite(g2, z.getSprite(), z.getX(), z.getY(),
@@ -98,7 +105,8 @@ public class Renderer {
                         Zombie.SIZE, Zombie.SIZE);
             }
         }
-
+        
+        //Drawing player with sprite image or blue circle
         if (player.getSprite() != null) {
             drawRotatedSprite(g2, player.getSprite(), player.getX(), player.getY(),
                     Player.SIZE, Player.SIZE, player.getFacingAngle());
@@ -111,6 +119,7 @@ public class Renderer {
         g2.translate(-offsetX, -offsetY);
     }
 
+    //rotating sprite images
     private void drawRotatedSprite(Graphics2D g2, Image sprite,
                                    double x, double y, int width, int height,
                                    double angle) {
@@ -139,7 +148,7 @@ public class Renderer {
 
         int radius = 100;
 
-        // *** FIXED: correct maze centering here too ***
+        // Maze centering
         int mazeWidth  = Maze.TILE_SIZE * maze.getCols();
         int mazeHeight = Maze.TILE_SIZE * maze.getRows();
 
@@ -215,14 +224,14 @@ public class Renderer {
     }
 
     // ---------------------------------------------------------
-    // OVERLAYS (delegated to OverlayRenderer)
+    // OVERLAYS
     // ---------------------------------------------------------
     public void renderOverlays(Graphics2D g2, GameStateManager gsm, Player player, int width, int height) {
         overlayRenderer.render(g2, gsm, player, rulesText, nightMode, width, height);
     }
 
     // ---------------------------------------------------------
-    // HUD (delegated to HUD class)
+    // HUD
     // ---------------------------------------------------------
     public void renderHUD(Graphics2D g2, Player player, boolean danger, int width, int height) {
         hud.render(g2, player, danger, width, height);

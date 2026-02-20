@@ -3,6 +3,9 @@ package model;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
+/*
+ * Makes the tile types and gives them colors
+ */
 public class Tile {
 
     private final TileType type;

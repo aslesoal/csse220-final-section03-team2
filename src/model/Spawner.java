@@ -5,16 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+/*
+ * Spawns the player, zombies, and collectibles
+ */
 public class Spawner {
 
-    // Constants now live here (GameConstant removed)
+    // Zombie and Collectible counts
     public static final int DEFAULT_ZOMBIE_COUNT = 8;
     public static final int DEFAULT_COLLECTIBLE_COUNT = 10;
 
     private final Maze maze;
     private final Random random = new Random();
 
-    // Level-specific zombie count (starts at default)
+    // Level-specific zombie count
     private int zombieCount = DEFAULT_ZOMBIE_COUNT;
 
     public Spawner(Maze maze) {
@@ -40,7 +43,9 @@ public class Spawner {
         return Math.abs(r1 - r2) + Math.abs(c1 - c2);
     }
 
-    // ZOMBIE SPAWN
+    // -----------------------------------
+    //ZOMBIE SPAWN
+    //------------------------------------
     public List<Zombie> spawnZombies(Player player) {
         List<Zombie> zombies = new ArrayList<>();
 

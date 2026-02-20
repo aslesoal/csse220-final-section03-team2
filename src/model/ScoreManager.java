@@ -3,13 +3,17 @@ package model;
 import java.io.*;
 import java.util.*;
 
+/*
+ * Saves the score after the game so that the leaderboard works
+ */
 public class ScoreManager {
 
     private static final String FILE = "scores.txt";
 
-    // Prevent instantiation (utility class)
+    // Prevent instantiation 
     private ScoreManager() {}
 
+    //Puts scores into scores.txt
     public static void saveScore(String name, int score) {
         try (PrintWriter out = new PrintWriter(new FileWriter(FILE, true))) {
             out.println(name + "," + score);
@@ -18,6 +22,7 @@ public class ScoreManager {
         }
     }
 
+    //Loads the scores
     public static List<String[]> loadScores() {
         List<String[]> list = new ArrayList<>();
 
@@ -36,6 +41,7 @@ public class ScoreManager {
         return list;
     }
 
+    //Empty the leaderboard
     public static void resetScores() {
         try (PrintWriter out = new PrintWriter(new FileWriter(FILE))) {
             // overwrite with empty
@@ -44,6 +50,7 @@ public class ScoreManager {
         }
     }
 
+    //Sorts the leaderboard
     public static boolean isNewHighScore(int score) {
         List<String[]> scores = loadScores();
         if (scores.isEmpty()) return true;

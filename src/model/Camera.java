@@ -8,7 +8,7 @@ import java.util.Random;
  */
 public class Camera {
 
-    // Constants moved here (GameConstant removed)
+    // Shaking constants
     public static final int SHAKE_FRAMES = 8;
     public static final int SHAKE_STRENGTH = 3;
 

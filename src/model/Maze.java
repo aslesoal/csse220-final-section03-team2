@@ -7,16 +7,20 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+/*
+ * Manages the reading of the text file
+ * Determines whether areas are walkable, and where the exit occurs
+ */
 public class Maze {
 
-    // TILE SIZE now lives here (GameConstant removed)
+    // Tile size constant
     public static final int TILE_SIZE = 32;
 
     private Tile[][] tiles;
     private int rows;
     private int cols;
 
-    // Spawn points
+    // Determines spawn points based on text file
     private Point playerSpawn = null;
     private final ArrayList<Point> zombieSpawns = new ArrayList<>();
 
@@ -93,16 +97,19 @@ public class Maze {
     public int getRows() { return rows; }
     public int getCols() { return cols; }
 
+    //makes the floors walkable
     public boolean isWalkable(int row, int col) {
         if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
         return tiles[row][col].isWalkable();
     }
 
+    //spawns exit
     public boolean isExit(int row, int col) {
         if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
         return tiles[row][col].isExit();
     }
 
+    //draws the tiles for the maze
     public void draw(Graphics2D g2) {
         int tileSize = TILE_SIZE;
         for (int r = 0; r < rows; r++) {

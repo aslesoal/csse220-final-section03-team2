@@ -3,9 +3,12 @@ package ui;
 import java.awt.*;
 import model.Player;
 
+/*
+ * Handles the output of the HUD
+ */
 public class HUD {
 
-    // Constants for layout (removes magic numbers)
+    // Constants for layout 
     private static final int BAR_HEIGHT = 60;
     private static final int INSTRUCTION_Y = 22;
     private static final int STATS_Y = 50;

@@ -1,5 +1,8 @@
 package model;
 
+/*
+ * Handles the shared properties between all entities
+ */
 public abstract class Entity {
 
     protected double x;

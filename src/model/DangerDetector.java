@@ -7,7 +7,7 @@ import java.util.List;
  */
 public class DangerDetector {
 
-    // Constant moved here (GameConstant removed)
+    // Danger distance constant
     public static final double DANGER_DISTANCE_TILES = 1.0;
 
     private boolean inDanger = false;
@@ -16,6 +16,7 @@ public class DangerDetector {
         return inDanger;
     }
 
+    //checks the distance between players and zombies
     public void update(Player player, List<Zombie> zombies) {
         double dangerDistancePixels = DANGER_DISTANCE_TILES * Maze.TILE_SIZE;
         double px = player.getX();

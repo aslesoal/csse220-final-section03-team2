@@ -5,14 +5,13 @@ import javax.imageio.ImageIO;
 
 public class Player extends Entity {
 
+	// Player constants
     public static final int SIZE = 18;
-
-    // Constants moved here (GameConstant removed)
     public static final int INITIAL_LIVES = 4;
     public static final int INVINCIBILITY_FRAMES = 60;
     public static final int FLASH_FRAMES = 20;
 
-    // FIXED: correct folder name
+    // Sprite Folder
     public static final String PLAYER_SPRITE = "/images/player.png";
 
     private double speed = 3.0;
@@ -28,6 +27,7 @@ public class Player extends Entity {
 
     private double facingAngle = 0.0;
 
+    //Starts the player in the middle of a tile and loads sprite
     public Player(int startRow, int startCol, Maze maze) {
         this.maze = maze;
 
@@ -46,25 +46,30 @@ public class Player extends Entity {
 
     public Image getSprite() { return sprite; }
 
+    //for HUD
     public int getLives() { return lives; }
     public int getScore() { return score; }
 
     public void addScore(int amount) { score += amount; }
     public void setScore(int value) { score = value; }
 
+    //handles losing lives and dieing
     public void loseLife() { lives--; }
     public boolean isDead() { return lives <= 0; }
 
+    //Invincibility frames
     public boolean isInvincible() { return invincibleTimer > 0; }
     public void triggerInvincibility() { invincibleTimer = INVINCIBILITY_FRAMES; }
     public void tickInvincibility() { if (invincibleTimer > 0) invincibleTimer--; }
 
+    //Flash frames after losing a life
     public boolean isFlashing() { return flashTimer > 0; }
     public void triggerFlash() { flashTimer = FLASH_FRAMES; }
     public void tickFlash() { if (flashTimer > 0) flashTimer--; }
 
     public double getFacingAngle() { return facingAngle; }
 
+    //player movement
     public void move(boolean up, boolean down, boolean left, boolean right) {
 
         double dx = 0;
@@ -91,6 +96,7 @@ public class Player extends Entity {
         if (!collidesWithWall(x, newY)) y = newY;
     }
 
+    //player stops at the wall
     private boolean collidesWithWall(double px, double py) {
         int tileSize = Maze.TILE_SIZE;
 
@@ -110,6 +116,7 @@ public class Player extends Entity {
                !maze.isWalkable(bottomRow, rightCol);
     }
 
+    //handles player reset
     public void reset() {
         lives = INITIAL_LIVES;
         score = 0;
